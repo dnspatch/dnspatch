@@ -23,7 +23,7 @@ type pingCounter struct {
 	success, fail int
 }
 
-func (c *pingCounter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (c *pingCounter) ServeHTTP(_ http.ResponseWriter, r *http.Request) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if r.URL.Path == "/ping/fail" {
@@ -55,12 +55,12 @@ func writeConfig(t *testing.T, body string) string {
 // coverage for the hook itself and for how the config field is threaded
 // through lives in internal/hooks/ping and internal/app.
 func TestPingBuildPingsOnEveryCompletedCycle(t *testing.T) {
-	echo := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	echo := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(rw, "203.0.113.7")
 	}))
 	defer echo.Close()
 
-	dns := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+	dns := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(rw, `{"result":"success","answer":{"domains":[{"dname":"example.com","result":"success","rrs":[]}]}}`)
 	}))
 	defer dns.Close()
