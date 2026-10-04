@@ -88,7 +88,7 @@ go mod tidy
 go build -o mydnspatch .
 ```
 
-The tags work as for the stock binary: `-tags ping` adds the `ping_url` hook, `-tags notify_all` every notifier, `-tags dnspatch_none` drops the built-in retrievers and providers.
+The tags work as for the stock binary: `-tags full` adds every built-in plugin, `-tags redis` (or the tag of another notifier or heavy provider) just that one, `-tags dnspatch_none` drops the built-in retrievers and providers; the `ping_url` hook is always there.
 
 ```bash
 ./mydnspatch --check-config --config dnspatch.toml

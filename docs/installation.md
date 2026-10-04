@@ -29,8 +29,8 @@ Releases ship two builds of the daemon:
 
 | Build | Archive | Image tags | What it is |
 |-------|---------|------------|------------|
-| lightweight | `dnspatch_*` | `0.4.0`, `0.4`, `latest` | every retriever and provider, none of the optional monitoring features |
-| full | `dnspatch-full_*` | `0.4.0-full`, `0.4-full`, `latest-full` | the same, plus the `ping_url` hook and the notifiers that publish to a message broker (see [Monitoring](operations/monitoring.md)) |
+| lightweight | `dnspatch_*` | `0.4.0`, `0.4`, `latest` | every retriever and provider except `rfc2136`, `yandexcloud` and `namecheap`, and the `ping_url` hook; no notifiers |
+| full | `dnspatch-full_*` | `0.4.0-full`, `0.4-full`, `latest-full` | every plugin: the lightweight build plus the `rfc2136`, `yandexcloud` and `namecheap` providers and the notifiers that publish to a message broker (see [Monitoring](operations/monitoring.md)) |
 
 The [config builder](https://dnspatch.github.io/builder/) tells which of the two your configuration needs.
 

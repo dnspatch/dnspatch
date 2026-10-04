@@ -33,7 +33,7 @@ jobs:
           go-version: stable
       # Written outside the checkout: an untracked file there would make the
       # tree dirty, which goreleaser refuses. .goreleaser.yaml attaches it.
-      - run: go run -tags notify_all ./cmd/gendoc -docs "$RUNNER_TEMP/PARAMETERS.md" -example "$RUNNER_TEMP/dnspatch.toml.example" -schema "$RUNNER_TEMP/schema.json"
+      - run: go run -tags full ./cmd/gendoc -docs "$RUNNER_TEMP/PARAMETERS.md" -example "$RUNNER_TEMP/dnspatch.toml.example" -schema "$RUNNER_TEMP/schema.json"
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
         with:
           version: "~> v2"
@@ -81,7 +81,7 @@ jobs:
             tags: ""
             suffix: ""
           - variant: full
-            tags: ping,notify_all
+            tags: full
             suffix: "-full"
     needs: ci
     runs-on: ubuntu-latest

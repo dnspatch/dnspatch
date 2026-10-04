@@ -30,10 +30,11 @@ jobs:
       # The tests include a check that docs/PARAMETERS.md and dnspatch.toml.example
       # match the plugin tags; run `go generate ./...` if it fails.
       - run: go test -race ./...
-      # The optional features live behind build tags, so the default build above
-      # never compiles them; this is the build the -full release ships.
-      - run: go vet -tags "ping,notify_all" ./...
-      - run: go test -race -tags "ping,notify_all" ./cmd/... ./internal/...
+      # The notifiers and the heavier plugins live behind build tags, so the
+      # default build above never compiles them; this is the build the -full
+      # release ships.
+      - run: go vet -tags full ./...
+      - run: go test -race -tags full ./cmd/... ./internal/...
 
   # Branch protection requires a check named "build & test". The matrix above
   # names its jobs after the OS, so this job stands in for all of them and
@@ -59,7 +60,11 @@ jobs:
           go-version-file: go.mod
       - run: go vet -tags "dnspatch_none,cloudflare,ipify" ./cmd/dnspatch
       - run: go test -tags "dnspatch_none,cloudflare,ipify" ./cmd/dnspatch
-      - run: go test -tags "dnspatch_none,retrievers_all,cloudflare" ./cmd/dnspatch
+      # A plugin that the plain build leaves out comes with its own tag, and the
+      # full tag puts everything in, also next to dnspatch_none.
+      - run: go test -tags rfc2136 ./cmd/dnspatch
+      - run: go test -tags full ./cmd/dnspatch
+      - run: go test -tags "dnspatch_none,full" ./cmd/dnspatch
       - run: go build -tags dnspatch_none -o /dev/null ./cmd/dnspatch
       - run: |
           set -e
@@ -157,7 +162,7 @@ jobs:
           go-version-file: go.mod
       - if: steps.changed.outputs.run == 'true'
         # The full build: full-build.toml is rejected by the lightweight one.
-        run: go build -tags "ping,notify_all" -o /tmp/dnspatch ./cmd/dnspatch
+        run: go build -tags full -o /tmp/dnspatch ./cmd/dnspatch
       # Run from inside examples/ so secrets-from-files.toml's relative
       # "./secrets/..." path resolves; the other files don't care about cwd.
       - if: steps.changed.outputs.run == 'true'
@@ -187,7 +192,7 @@ jobs:
           - variant: minimal
             tags: ""
           - variant: full
-            tags: ping,notify_all
+            tags: full
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

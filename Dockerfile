@@ -25,9 +25,9 @@ ARG TARGETVARIANT
 ARG VERSION=dev
 # Build tags to compile with, comma-separated (see cmd/dnspatch/main.go and
 # "Building from source" in the documentation). Empty is the lightweight build, with
-# every retriever and provider; the -full image is built with
-# TAGS="ping,notify_all"; a small custom image with, for example,
-# TAGS="dnspatch_none,ipify,cloudflare".
+# every retriever and provider except the heavy ones (rfc2136, yandexcloud,
+# namecheap), and no notifier; the -full image is built with TAGS="full"; a small
+# custom image with, for example, TAGS="dnspatch_none,ipify,cloudflare".
 ARG TAGS
 # TARGETVARIANT is "v7" for linux/arm/v7 and empty elsewhere; GOARM wants "7".
 RUN --mount=type=cache,target=/go/pkg/mod \

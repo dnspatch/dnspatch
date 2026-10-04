@@ -30,14 +30,13 @@ builds:
       - goos: windows
         goarch: arm
 
-  # The same binary with the optional features compiled in (see
-  # cmd/dnspatch/main.go), shipped as its own archives.
+  # The same binary with every plugin compiled in (see cmd/dnspatch/main.go),
+  # shipped as its own archives.
   - id: dnspatch-full
     main: ./cmd/dnspatch
     binary: dnspatch
     tags:
-      - ping
-      - notify_all
+      - full
     env:
       - CGO_ENABLED=0
     goos:
@@ -110,7 +109,7 @@ release:
     docker pull ghcr.io/dnspatch/dnspatch:{{ .Version }}
     ```
 
-    The `-full` tag is the same image with `ping_url` and the notifier backends compiled in:
+    The `-full` tag is the same image with every plugin compiled in, the notifier backends and the `rfc2136`, `yandexcloud` and `namecheap` providers included:
 
     ```sh
     docker pull krimsn/dnspatch:{{ .Version }}-full
@@ -120,9 +119,9 @@ release:
 
     ```sh
     go install github.com/dnspatch/dnspatch/cmd/dnspatch@{{ .Tag }}
-    go install -tags "ping,notify_all" github.com/dnspatch/dnspatch/cmd/dnspatch@{{ .Tag }}   # the full build
+    go install -tags full github.com/dnspatch/dnspatch/cmd/dnspatch@{{ .Tag }}   # the full build
     ```
 
-    **Binary:** download the archive for your platform below and check it against `checksums.txt`. `dnspatch_*` is the lightweight build, `dnspatch-full_*` the one with `ping_url` and the notifier backends.
+    **Binary:** download the archive for your platform below and check it against `checksums.txt`. `dnspatch_*` is the lightweight build, `dnspatch-full_*` the one with every plugin, the notifier backends and the `rfc2136`, `yandexcloud` and `namecheap` providers included.
 
 # The container image is built from the Dockerfile by .github/workflows/release.yml.

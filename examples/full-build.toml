@@ -1,8 +1,8 @@
-# The features that need the full build (the -full image or binary, or a build
-# with -tags "ping,notify_all"): a ping on every completed cycle, and status
-# changes published to a message broker. The lightweight build rejects this
-# file at startup instead of ignoring the two settings, so a config that uses
-# them never silently does nothing.
+# The notifiers need the full build (the -full image or binary, or a build with
+# -tags full, or with the tag of the one backend you use): status changes
+# published to a message broker. The lightweight build rejects this file at
+# startup instead of ignoring them, so a config that uses a notifier never
+# silently does nothing. The ping on every completed cycle works in every build.
 #
 # Everything else in the file is the same as on the lightweight build.
 

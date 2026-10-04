@@ -75,17 +75,17 @@ Prefer a form to a text editor? The [online builder](https://dnspatch.github.io/
 ## Install
 
 - **Binary** for Linux, macOS and Windows from the [releases page](https://github.com/dnspatch/dnspatch/releases).
-- **Container image** from Docker Hub (`krimsn/dnspatch`) or the GitHub Container Registry (`ghcr.io/dnspatch/dnspatch`). The `latest-full` tag adds monitoring pings and notifiers.
+- **Container image** from Docker Hub (`krimsn/dnspatch`) or the GitHub Container Registry (`ghcr.io/dnspatch/dnspatch`). The `latest-full` tag adds the notifiers and the `rfc2136`, `yandexcloud` and `namecheap` providers.
 - **From source**, with Go 1.25 or newer:
 
     ```sh
     go install github.com/dnspatch/dnspatch/cmd/dnspatch@latest
     ```
 
-    This builds the lightweight version: without the `ping_url` hook and without notifiers (Redis, RabbitMQ, MQTT). To get them, add build tags:
+    This builds the lightweight version: without the notifiers (Redis, RabbitMQ, MQTT) and without the `rfc2136`, `yandexcloud` and `namecheap` providers. To get them, add the `full` build tag, or the tag of just the plugin you need:
 
     ```sh
-    go install -tags "ping,notify_all" github.com/dnspatch/dnspatch/cmd/dnspatch@latest
+    go install -tags full github.com/dnspatch/dnspatch/cmd/dnspatch@latest
     ```
 
 Docker Compose, build tags for a smaller binary and cross-compiling are in the [installation guide](https://dnspatch.github.io/dnspatch/installation/). Not sure which build or tags you need? The [builder](https://dnspatch.github.io/builder/) picks them from the plugins in your config.
