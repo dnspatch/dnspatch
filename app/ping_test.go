@@ -1,5 +1,3 @@
-//go:build ping
-
 package app
 
 import (

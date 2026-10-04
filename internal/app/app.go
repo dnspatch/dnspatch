@@ -231,7 +231,7 @@ func attachNotify(instances []runner.Instance, cfg config.Config, build NotifyBu
 	if build == nil {
 		first := cfg.Notify[names[0]]
 
-		return closeAll, connectAll, fmt.Errorf("notify: notifier %q (type %q) is used, but this build does not support a notify backend; use a build with the notify_all tag (the -full image or binary)", names[0], first.Type)
+		return closeAll, connectAll, fmt.Errorf("notify: notifier %q (type %q) is used, but this build does not support a notify backend; use a build with the full tag (the -full image or binary)", names[0], first.Type)
 	}
 
 	var errs []error
@@ -344,7 +344,7 @@ func buildInstances(cfg config.Config, registry *plugin.Registry, buildHooks Hoo
 		case in.PingURL == "":
 			// Nothing to wire, in any build.
 		case buildHooks == nil:
-			errs = append(errs, fmt.Errorf("instance %q: ping_url is set, but this build does not support monitoring hooks; use a build with the ping tag (the -full image or binary)", in.Name))
+			errs = append(errs, fmt.Errorf("instance %q: ping_url is set, but this build does not support monitoring hooks", in.Name))
 		default:
 			hooks, err := buildHooks(in, log)
 			if err != nil {
