@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -103,5 +104,39 @@ func TestAfterCycleDoesNotPublish(t *testing.T) {
 
 	if got := pub.all(); len(got) != 0 {
 		t.Errorf("AfterCycle published %v, want nothing: events come through OnEvent", got)
+	}
+}
+
+// loggingNotifier is a notifier that takes the logger the daemon hands it and
+// writes to it from the outside of a Publish.
+type loggingNotifier struct{ log **slog.Logger }
+
+func (loggingNotifier) Publish(context.Context, string, []byte) error { return nil }
+func (loggingNotifier) Close() error                                  { return nil }
+func (n loggingNotifier) SetLogger(log *slog.Logger)                  { *n.log = log }
+
+func TestBuildConnectionGivesTheNotifierALoggerNamingTheDefinition(t *testing.T) {
+	var got *slog.Logger
+
+	plugin.RegisterNotifierIn(plugin.Default, "logging", func(fakeConfig) (plugin.Notifier, error) {
+		return loggingNotifier{log: &got}, nil
+	})
+
+	var out strings.Builder
+
+	base := slog.New(slog.NewTextHandler(&out, nil))
+
+	if _, err := BuildConnection(config.Plugin{Ref: "alerts", Type: "logging"}, base); err != nil {
+		t.Fatalf("BuildConnection: %v", err)
+	}
+
+	if got == nil {
+		t.Fatal("SetLogger was not called through the registry's wrapper")
+	}
+
+	got.Error("lost")
+
+	if line := out.String(); !strings.Contains(line, "notify=alerts") || !strings.Contains(line, "type=logging") {
+		t.Errorf("log line = %q, want it to carry the notifier's name and type", line)
 	}
 }

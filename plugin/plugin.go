@@ -43,6 +43,9 @@ type (
 	// Connector is an optional interface of a Notifier that connects lazily: the
 	// daemon calls Connect at startup to report an unreachable broker early.
 	Connector = contract.Connector
+	// LoggerSetter is an optional interface of a Notifier that reports on its
+	// own, such as a connection the broker dropped: the daemon hands it a logger.
+	LoggerSetter = contract.LoggerSetter
 	// NotifierCommon holds the parameters every notifier takes; the
 	// configuration struct of a notifier must embed it.
 	NotifierCommon = contract.NotifierCommon

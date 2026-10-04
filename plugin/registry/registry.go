@@ -4,6 +4,7 @@ package registry
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 	"reflect"
 	"slices"
@@ -363,6 +364,14 @@ type prefixed struct {
 
 func (p prefixed) Publish(ctx context.Context, instance string, payload []byte) error {
 	return p.Notifier.Publish(ctx, p.cfg.Topic(instance), payload)
+}
+
+// SetLogger forwards to the wrapped notifier when it is a contract.LoggerSetter,
+// for the same reason as Connect.
+func (p prefixed) SetLogger(log *slog.Logger) {
+	if s, ok := p.Notifier.(contract.LoggerSetter); ok {
+		s.SetLogger(log)
+	}
 }
 
 // Connect forwards to the wrapped notifier when it is a contract.Connector, so that
