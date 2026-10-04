@@ -158,6 +158,7 @@ func TestRenderOutput(t *testing.T) {
 		map[string]reflect.Type{"beta": reflect.TypeFor[betaConfig]()},
 		map[string]reflect.Type{"alpha": reflect.TypeFor[alphaConfig](), "beta": reflect.TypeFor[struct{}]()},
 		nil,
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -218,7 +219,7 @@ func TestRenderMarksRequiredParametersOfOptionalTables(t *testing.T) {
 		} `toml:"extra"`
 	}
 
-	got, err := render(nil, map[string]reflect.Type{"p": reflect.TypeFor[config]()}, nil)
+	got, err := render(nil, map[string]reflect.Type{"p": reflect.TypeFor[config]()}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,8 +229,29 @@ func TestRenderMarksRequiredParametersOfOptionalTables(t *testing.T) {
 	}
 }
 
+// A plugin of the full build only gets a note under its heading, and a plugin
+// of another kind with the same name does not.
+func TestRenderMarksPluginsOfTheFullBuildOnly(t *testing.T) {
+	types := map[string]reflect.Type{"heavy": reflect.TypeFor[alphaConfig]()}
+	known := []plugin.Known{{Kind: plugin.KindProvider, Name: "heavy", Extra: true}}
+
+	got, err := render(types, types, nil, known)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "### Provider `heavy`\n\n> **Full build only.**"
+	if !strings.Contains(string(got), want) {
+		t.Errorf("no note under the provider, want %q in:\n%s", want, got)
+	}
+
+	if strings.Count(string(got), "Full build only") != 1 {
+		t.Errorf("the note is not on the provider alone:\n%s", got)
+	}
+}
+
 func TestRenderWithoutPlugins(t *testing.T) {
-	got, err := render(nil, nil, nil)
+	got, err := render(nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,13 +270,13 @@ func TestRenderIsRepeatable(t *testing.T) {
 		plugins[name] = reflect.TypeFor[alphaConfig]()
 	}
 
-	first, err := render(plugins, plugins, nil)
+	first, err := render(plugins, plugins, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for range 50 {
-		again, err := render(plugins, plugins, nil)
+		again, err := render(plugins, plugins, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -270,7 +292,7 @@ func TestRenderIsRepeatable(t *testing.T) {
 }
 
 func TestRenderNamesTheBadPlugin(t *testing.T) {
-	_, err := render(nil, map[string]reflect.Type{"broken": reflect.TypeFor[string]()}, nil)
+	_, err := render(nil, map[string]reflect.Type{"broken": reflect.TypeFor[string]()}, nil, nil)
 	if err == nil || !strings.Contains(err.Error(), `provider "broken"`) {
 		t.Errorf("error %v does not name the plugin", err)
 	}
@@ -329,15 +351,16 @@ func TestCommittedFilesAreCurrent(t *testing.T) {
 	}
 
 	retrievers, providers, notifiers := plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), plugin.Default.NotifierConfigTypes()
+	known := plugin.Default.Known()
 
-	files := map[string]func(retrievers, providers, notifiers map[string]reflect.Type) ([]byte, error){
+	files := map[string]func(retrievers, providers, notifiers map[string]reflect.Type, known []plugin.Known) ([]byte, error){
 		"docs/PARAMETERS.md":    render,
 		"dnspatch.toml.example": renderExample,
 	}
 
 	for name, generate := range files {
 		t.Run(name, func(t *testing.T) {
-			want, err := generate(retrievers, providers, notifiers)
+			want, err := generate(retrievers, providers, notifiers, known)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -355,7 +378,7 @@ func TestCommittedFilesAreCurrent(t *testing.T) {
 }
 
 func TestRenderListsNotifiers(t *testing.T) {
-	got, err := render(nil, nil, map[string]reflect.Type{"broker": reflect.TypeFor[alphaConfig]()})
+	got, err := render(nil, nil, map[string]reflect.Type{"broker": reflect.TypeFor[alphaConfig]()}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

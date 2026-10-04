@@ -238,6 +238,8 @@ password = "${PASSWORD}"
 # socks5://user:pass@203.0.113.5:1080.
 # proxy = "socks5://user:pass@203.0.113.5:1080"
 
+# Full build only (the -full image or binary, or the "namecheap" build tag): the
+# lightweight build rejects a config that uses it.
 [provider.namecheap]
 type = "namecheap"
 
@@ -317,6 +319,8 @@ password = "${PASSWORD}"
 # socks5://user:pass@203.0.113.5:1080.
 # proxy = "socks5://user:pass@203.0.113.5:1080"
 
+# Full build only (the -full image or binary, or the "rfc2136" build tag): the
+# lightweight build rejects a config that uses it.
 [provider.rfc2136]
 type = "rfc2136"
 
@@ -411,6 +415,8 @@ token = "${TW_TOKEN}"
 # socks5://user:pass@203.0.113.5:1080.
 # proxy = "socks5://user:pass@203.0.113.5:1080"
 
+# Full build only (the -full image or binary, or the "yandexcloud" build tag): the
+# lightweight build rejects a config that uses it.
 [provider.yandexcloud]
 type = "yandexcloud"
 
