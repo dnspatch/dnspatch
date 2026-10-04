@@ -364,3 +364,14 @@ type prefixed struct {
 func (p prefixed) Publish(ctx context.Context, instance string, payload []byte) error {
 	return p.Notifier.Publish(ctx, p.cfg.Topic(instance), payload)
 }
+
+// Connect forwards to the wrapped notifier when it is a contract.Connector, so that
+// the wrapper does not hide the startup connection; a notifier without one has
+// nothing to connect.
+func (p prefixed) Connect(ctx context.Context) error {
+	if c, ok := p.Notifier.(contract.Connector); ok {
+		return c.Connect(ctx)
+	}
+
+	return nil
+}

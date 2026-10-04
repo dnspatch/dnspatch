@@ -59,6 +59,15 @@ type Notifier interface {
 	Close() error
 }
 
+// Connector is implemented by a Notifier that connects lazily, on its first
+// Publish. The daemon calls Connect once at startup, so a broker that cannot be
+// reached, or that refuses the credentials, is reported right away and not when
+// the first event happens to be published. A failed Connect does not stop the
+// daemon: the notifier connects again on a later Publish.
+type Connector interface {
+	Connect(ctx context.Context) error
+}
+
 // NotifierCommon holds the parameters every notifier takes. RegisterNotifier
 // requires the configuration struct of a notifier to embed it:
 //

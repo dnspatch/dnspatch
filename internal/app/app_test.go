@@ -1290,3 +1290,54 @@ func TestCheckConfigShowsTheNotifiersOfEachInstance(t *testing.T) {
 		t.Errorf("summary of b = %q, want no notifier: it lists none", lines[2])
 	}
 }
+
+// connectingConn is a NotifyConnection whose broker may be down, as reported by
+// its Connect.
+type connectingConn struct {
+	recordingConn
+	err error
+}
+
+func (c *connectingConn) Connect(context.Context) error { return c.err }
+
+func TestStartupConnectLogsAnUnreachableNotifierAsError(t *testing.T) {
+	cfg := config.Config{Notify: map[string]config.Plugin{
+		"down": {Type: "rabbitmq"},
+		"up":   {Type: "mqtt"},
+		"lazy": {Type: "redis"},
+	}}
+	conns := map[string]NotifyConnection{
+		"down": &connectingConn{err: errors.New("connection refused")},
+		"up":   &connectingConn{},
+		"lazy": &recordingConn{},
+	}
+
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, nil))
+
+	closeAll, connectAll, err := attachNotify(nil, cfg, func(c config.Plugin, _ *slog.Logger) (NotifyConnection, error) {
+		for name, p := range cfg.Notify {
+			if p.Type == c.Type {
+				return conns[name], nil
+			}
+		}
+		return nil, errors.New("unknown")
+	}, logger)
+	if err != nil {
+		t.Fatalf("attachNotify: %v", err)
+	}
+	defer closeAll()
+
+	connectAll(context.Background())
+
+	got := logs.String()
+	if !strings.Contains(got, "level=ERROR") || !strings.Contains(got, "notify=down") || !strings.Contains(got, "connection refused") {
+		t.Errorf("log = %q, want an error naming the notifier that is down", got)
+	}
+	if strings.Contains(got, "notify=up") && strings.Contains(got, "level=ERROR notify=up") {
+		t.Errorf("log = %q, a reachable notifier must not be reported as an error", got)
+	}
+	if strings.Contains(got, "notify=lazy") {
+		t.Errorf("log = %q, a notifier without Connect must not be logged", got)
+	}
+}

@@ -104,6 +104,23 @@ func (p *publisher) Publish(ctx context.Context, routingKey string, payload []by
 	return nil
 }
 
+// Connect connects now, if the publisher is not connected, and keeps the
+// connection for the first Publish.
+func (p *publisher) Connect(ctx context.Context) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return errors.New("notifier is closed")
+	}
+
+	if p.ch != nil && !p.ch.IsClosed() {
+		return nil
+	}
+
+	return p.connect(ctx)
+}
+
 // connect opens the connection through dial, giving up when ctx ends: the AMQP
 // handshake does not look at the context, only at dialTimeout, and Publish
 // holds the mutex meanwhile. A connection that completes after ctx ended is

@@ -155,6 +155,23 @@ func (p *publisher) Publish(ctx context.Context, topic string, payload []byte) e
 	return nil
 }
 
+// Connect connects now, if the publisher is not connected, and keeps the
+// connection for the first Publish.
+func (p *publisher) Connect(ctx context.Context) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return errors.New("notifier is closed")
+	}
+
+	if p.client != nil && p.client.IsConnectionOpen() {
+		return nil
+	}
+
+	return p.connect(ctx)
+}
+
 // connect opens a connection that is not retried or re-established by the
 // client: Publish decides when to connect again. It leaves nothing half-open
 // on failure.

@@ -13,6 +13,7 @@
 package notify
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/dnspatch/dnspatch/internal/config"
@@ -43,6 +44,17 @@ func BuildConnection(cfg config.Plugin, log *slog.Logger) (*Connection, error) {
 // Hook returns the hook that publishes the given event types of an instance.
 func (c *Connection) Hook(events []config.Event) runner.Hook {
 	return newHook(c.pub, c.log, events)
+}
+
+// Connect connects to the broker now if the notifier supports it (see
+// plugin.Connector); a notifier that connects in its constructor has nothing to
+// connect.
+func (c *Connection) Connect(ctx context.Context) error {
+	if ch, ok := c.pub.(plugin.Connector); ok {
+		return ch.Connect(ctx)
+	}
+
+	return nil
 }
 
 // Close releases the connection. The daemon calls it once, after every instance
