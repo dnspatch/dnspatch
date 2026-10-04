@@ -31,8 +31,8 @@ The image is published to [Docker Hub](https://hub.docker.com/r/krimsn/dnspatch)
 
 | Tag | Build |
 |-----|-------|
-| `0.4.0`, `0.4`, `latest` | lightweight: every retriever and provider, no optional monitoring |
-| `0.4.0-full`, `0.4-full`, `latest-full` | full: also the `ping_url` hook and the notifiers |
+| `0.4.0`, `0.4`, `latest` | lightweight: every retriever and provider except `rfc2136`, `yandexcloud` and `namecheap`, the `ping_url` hook, no notifiers |
+| `0.4.0-full`, `0.4-full`, `latest-full` | full: every plugin, with the three providers above and the notifiers |
 
 The full image exists from 0.4.0 on; 0.1 to 0.3 were published as a single build, the lightweight one, under the tags without a suffix.
 

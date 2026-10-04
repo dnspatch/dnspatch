@@ -5,7 +5,7 @@
 // events while its consumer is away.
 //
 // The package pulls in the amqp091-go client, which is why notifiers are left
-// out of a plain build; see the notify_all and rabbitmq build tags.
+// out of a plain build; see the full and rabbitmq build tags.
 package rabbitmq
 
 import (

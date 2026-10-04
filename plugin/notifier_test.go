@@ -127,3 +127,18 @@ func TestDeclaredPluginsThatAreNotRegisteredSayHowToGetThem(t *testing.T) {
 		t.Errorf("Known() has %d entries, want 3", got)
 	}
 }
+
+func TestDeclareExtraMarksThePluginAsLeftOutOfTheDefaultBuild(t *testing.T) {
+	registry := plugin.NewRegistry()
+	registry.Declare(plugin.KindProvider, "light", "")
+	registry.DeclareExtra(plugin.KindProvider, "heavy", "")
+
+	got := map[string]bool{}
+	for _, k := range registry.Known() {
+		got[k.Name] = k.Extra
+	}
+
+	if len(got) != 2 || got["light"] || !got["heavy"] {
+		t.Errorf("Extra by name = %v, want only heavy to be extra", got)
+	}
+}

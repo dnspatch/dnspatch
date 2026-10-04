@@ -148,7 +148,7 @@ which is how `go generate` reads it without compiling the package.
 A notification backend is a plugin as well: it implements `plugin.Notifier`,
 registers with `plugin.RegisterNotifier`, and its configuration struct embeds
 `plugin.NotifierCommon`, which supplies `topic_prefix`. Because it brings the
-client library of a broker, it is off in a plain build; `notify_all` or its own
+client library of a broker, it is off in a plain build; `full` or its own
 tag turns it on. The types of events a notifier publishes (`events` in
 `[notify.<name>]`) are not its concern: the daemon filters them before calling
 `Publish`, so the contract is the same for every backend and has no event
@@ -209,9 +209,14 @@ and commit the result. It runs two generators:
   updates the table of build tags in [Building from source](../deployment/building.md). This is what makes a new
   plugin selectable with `-tags`, and part of the default build, with no edit
   of a list.
+
+  A plugin whose dependencies make the binary noticeably larger can stay out of
+  the default build: put the line `//dnspatch:extra` at the end of its package
+  comment, after the reason. Its tag then adds it to the default build, and the
+  `full` tag brings it too. Every notifier is left out this way without the line.
 - `cmd/gendoc` writes `docs/PARAMETERS.md` and `dnspatch.toml.example` from the
   struct tags. It has to see every plugin, so `go generate` builds it with the
-  `notify_all` tag; it refuses to write from a build that lacks one.
+  `full` tag; it refuses to write from a build that lacks one.
 
   With `-schema <file>` it also writes `schema.json`, which is not committed:
   the release workflow generates it and attaches it to the release as an asset
@@ -219,7 +224,7 @@ and commit the result. It runs two generators:
 
 The tests `TestCommittedFilesAreCurrent` of both (part of `go test ./...`, so
 of CI) fail when the committed files are out of date; the one of `cmd/gendoc`
-needs `-tags notify_all` to run, and CI passes it. Never edit the generated
+needs `-tags full` to run, and CI passes it. Never edit the generated
 files by hand.
 
 ## schema.json
@@ -237,7 +242,8 @@ a plugin needs nothing extra.
     {
       "kind": "provider",
       "name": "cloudflare",
-      "build_tags": ["cloudflare", "providers_all"],
+      "build_tags": ["cloudflare", "full"],
+      "in_default_build": true,
       "fields": [
         {
           "name": "zone_id",
@@ -258,6 +264,7 @@ a plugin needs nothing extra.
 | `kind` | `retriever`, `provider` or `notifier` |
 | `name` | the value of `type` in the configuration file |
 | `build_tags` | build tags of which any one compiles the plugin in |
+| `in_default_build` | the plugin is in a build made without tags; the others need one of `build_tags`, and `dnspatch_none` leaves out the ones that are |
 | `fields[].name` | the parameter name; a parameter of a nested table is written `table.name` |
 | `fields[].type` | `string`, `boolean`, `integer`, `number`, `duration`, `array` or `table` |
 | `fields[].required` | the parameter has to be given; with `required_if` set, only once that optional table is present |
@@ -265,4 +272,4 @@ a plugin needs nothing extra.
 | `fields[].description` | the `doc` tag |
 | `fields[].secret` | the `secret` option of the `toml` tag: a password, a key or the like |
 
-To produce the file locally, run `go run -tags notify_all ./cmd/gendoc -schema schema.json`.
+To produce the file locally, run `go run -tags full ./cmd/gendoc -schema schema.json`.

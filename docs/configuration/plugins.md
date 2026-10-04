@@ -16,14 +16,14 @@ Every parameter of every plugin is described in the [Parameter reference](../PAR
 | provider | `dyndns2` | updates a record through the dyndns2 protocol of any service that speaks it, for a service that has no plugin of its own; the update URL is a parameter and both addresses go in one request |
 | provider | `dyn` | updates the `A` and `AAAA` record of a host at [Dyn](https://dyn.com) (the former DynDNS) through its Dynamic DNS service, both addresses in one request; a `dyndns2` with the URL filled in |
 | provider | `dynu` | updates the `A` and `AAAA` record of a host at [Dynu](https://www.dynu.com) through its Dynamic DNS service, in one request; a `dyndns2` with the URL filled in |
-| provider | `namecheap` | sets the `A` record of a host at [Namecheap](https://www.namecheap.com) through its Dynamic DNS feature; not dyndns2, IPv4 only, the password travels in the query string |
+| provider | `namecheap` | (full build) sets the `A` record of a host at [Namecheap](https://www.namecheap.com) through its Dynamic DNS feature; not dyndns2, IPv4 only, the password travels in the query string |
 | provider | `nicru` | updates the `A` and `AAAA` record of a domain at [NIC.RU](https://www.nic.ru) through its Dynamic DNS service, in one request; a `dyndns2` with the URL filled in (see [nicru.toml](https://github.com/dnspatch/dnspatch/blob/main/examples/nicru.toml)) |
 | provider | `noip` | updates the `A` and `AAAA` record of a host at [No-IP](https://www.noip.com) through its Dynamic DNS service, in one request; a `dyndns2` with the URL filled in |
 | provider | `regru` | sets the `A` or `AAAA` record of a zone hosted at [REG.RU](https://www.reg.ru), through REG.API 2 |
-| provider | `rfc2136` | sets the `A` or `AAAA` record on your own name server (BIND, Knot DNS, PowerDNS, Technitium, ...) with RFC 2136 dynamic updates, signed with TSIG |
+| provider | `rfc2136` | (full build) sets the `A` or `AAAA` record on your own name server (BIND, Knot DNS, PowerDNS, Technitium, ...) with RFC 2136 dynamic updates, signed with TSIG |
 | provider | `selectel` | sets the `A` or `AAAA` record of a zone hosted at [Selectel](https://selectel.ru) DNS Hosting, through Cloud DNS API v2 |
 | provider | `timeweb` | sets the `A` or `AAAA` record of a zone hosted at [Timeweb Cloud](https://timeweb.cloud), through its DNS API, authenticating with a static API token |
-| provider | `yandexcloud` | sets the `A` or `AAAA` record of a zone hosted at [Yandex Cloud DNS](https://yandex.cloud/en/services/dns), authenticating as a service account with an authorized key |
+| provider | `yandexcloud` | (full build) sets the `A` or `AAAA` record of a zone hosted at [Yandex Cloud DNS](https://yandex.cloud/en/services/dns), authenticating as a service account with an authorized key |
 | notifier | `redis` | publishes status changes to a Redis Pub/Sub channel (full build) |
 | notifier | `rabbitmq` | publishes status changes to a RabbitMQ topic exchange (full build) |
 | notifier | `mqtt` | publishes status changes to an MQTT topic (full build) |

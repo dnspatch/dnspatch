@@ -37,7 +37,7 @@ func decodeSchema(t *testing.T, data []byte) schema {
 }
 
 func TestRenderSchemaDescribesFields(t *testing.T) {
-	data, err := renderSchema(nil, map[string]reflect.Type{"sample": reflect.TypeFor[schemaSample]()}, nil)
+	data, err := renderSchema(nil, map[string]reflect.Type{"sample": reflect.TypeFor[schemaSample]()}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestRenderSchemaDescribesFields(t *testing.T) {
 	}
 
 	p := s.Plugins[0]
-	if p.Kind != plugin.KindProvider || p.Name != "sample" || !reflect.DeepEqual(p.BuildTags, []string{"sample", "providers_all"}) {
+	if p.Kind != plugin.KindProvider || p.Name != "sample" || !reflect.DeepEqual(p.BuildTags, []string{"sample", "full"}) || !p.InDefaultBuild {
 		t.Errorf("plugin header: %+v", p)
 	}
 
@@ -69,8 +69,27 @@ func TestRenderSchemaDescribesFields(t *testing.T) {
 	}
 }
 
+func TestRenderSchemaMarksWhatTheDefaultBuildLeavesOut(t *testing.T) {
+	types := map[string]reflect.Type{"heavy": reflect.TypeFor[schemaSample](), "light": reflect.TypeFor[schemaSample]()}
+	known := []plugin.Known{{Kind: plugin.KindProvider, Name: "heavy", Extra: true}, {Kind: plugin.KindProvider, Name: "light"}}
+
+	data, err := renderSchema(nil, types, nil, known)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[string]bool{}
+	for _, p := range decodeSchema(t, data).Plugins {
+		got[p.Name] = p.InDefaultBuild
+	}
+
+	if want := map[string]bool{"heavy": false, "light": true}; !reflect.DeepEqual(got, want) {
+		t.Errorf("in_default_build = %v, want %v", got, want)
+	}
+}
+
 func TestRenderSchemaWithoutPluginsHasEmptyList(t *testing.T) {
-	data, err := renderSchema(nil, nil, nil)
+	data, err := renderSchema(nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +100,7 @@ func TestRenderSchemaWithoutPluginsHasEmptyList(t *testing.T) {
 }
 
 func TestRenderSchemaNamesTheBadPlugin(t *testing.T) {
-	_, err := renderSchema(nil, nil, map[string]reflect.Type{"broken": reflect.TypeFor[string]()})
+	_, err := renderSchema(nil, nil, map[string]reflect.Type{"broken": reflect.TypeFor[string]()}, nil)
 	if err == nil || !strings.Contains(err.Error(), `notifier "broken"`) {
 		t.Errorf("error %v does not name the plugin", err)
 	}
@@ -95,7 +114,7 @@ func TestSchemaMatchesPluginsAndTags(t *testing.T) {
 		t.Skip(err)
 	}
 
-	data, err := renderSchema(plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), plugin.Default.NotifierConfigTypes())
+	data, err := renderSchema(plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), plugin.Default.NotifierConfigTypes(), plugin.Default.Known())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,6 +147,16 @@ func TestSchemaMatchesPluginsAndTags(t *testing.T) {
 			if after, ok := strings.CutPrefix(line, "//go:build "); ok {
 				constraint = strings.TrimSpace(after)
 			}
+		}
+
+		if p.InDefaultBuild == k.Extra {
+			t.Errorf("%s: in_default_build is %v, but the catalog says extra = %v", key, p.InDefaultBuild, k.Extra)
+		}
+
+		// A plugin of the default build is on without any tag, so its
+		// constraint is the one that names dnspatch_none.
+		if left := strings.Contains(constraint, "!dnspatch_none"); left != p.InDefaultBuild {
+			t.Errorf("%s: in_default_build is %v, but the constraint is %q", key, p.InDefaultBuild, constraint)
 		}
 
 		for _, tag := range p.BuildTags {

@@ -8,7 +8,7 @@
 // become slashes ("dnspatch/events/home").
 //
 // The package pulls in the Eclipse Paho client, which is why notifiers are left
-// out of a plain build; see the notify_all and mqtt build tags.
+// out of a plain build; see the full and mqtt build tags.
 package mqtt
 
 import (

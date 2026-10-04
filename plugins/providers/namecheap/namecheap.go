@@ -6,6 +6,11 @@
 // rather than as HTTP Basic auth, the response is an XML document instead of
 // dyndns2's good/nochg vocabulary, and only A records are supported, so it
 // needs its own plugin.
+//
+// It is left out of the default build, because its XML decoding adds about 0.1 MB to the binary; the full build and
+// the "namecheap" build tag bring it.
+//
+//dnspatch:extra
 package namecheap
 
 import "github.com/dnspatch/dnspatch/plugin"

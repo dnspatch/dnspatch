@@ -4,34 +4,34 @@
 go install github.com/dnspatch/dnspatch/cmd/dnspatch@latest
 ```
 
-Requires Go 1.25 or newer. A plain `go build` gives the same daemon as the `dnspatch` image and binaries: every retriever and provider, none of the optional monitoring features. To get a smaller binary, or the features of the `-full` one, choose what goes in with build tags. This matters where size does: a Raspberry Pi, or a router running OpenWrt.
+Requires Go 1.25 or newer. A plain `go build` gives the same daemon as the `dnspatch` image and binaries: every retriever and provider except three heavy ones (`rfc2136`, `yandexcloud` and `namecheap`), the `ping_url` hook, and no notifier backend. To get a smaller binary, or the plugins of the `-full` one, choose what goes in with build tags. This matters where size does: a Raspberry Pi, or a router running OpenWrt.
 
 ## Build tags
 
-Every plugin has a build tag named after its type, and there are more:
+Every plugin has a build tag named after its type, and there are two more:
 
+- `full` compiles in every plugin, what the `-full` image and binaries are. It wins over `dnspatch_none`.
 - `dnspatch_none` leaves out every retriever and provider. Add the tags of the ones you need to bring those back, and nothing else is compiled in.
-- `providers_all` and `retrievers_all`, together with `dnspatch_none`, bring back every provider or every retriever, so `dnspatch_none,retrievers_all,cloudflare` is all the retrievers and one provider.
-- `ping` compiles in the `ping_url` hook (see [Monitoring](../operations/monitoring.md#monitoring-pings)).
-- `notify_all` compiles in every notifier backend; a backend's own tag, such as `redis`, compiles in only that one (see [Notifications](../operations/monitoring.md#notifications)).
+
+What a plugin's tag does depends on whether the plain build has the plugin. For a plugin it has, the tag matters only together with `dnspatch_none`. For one it leaves out, the tag adds that plugin to the plain build: `rfc2136`, `yandexcloud` and `namecheap` among the providers, and every notifier backend (`redis`, `rabbitmq`, `mqtt`; see [Notifications](../operations/monitoring.md#notifications)). They are left out because the libraries they need make the binary larger, by 0.1 to 1.5 MB each. The table at the end of this page says which plugin is which, and `ping_url` (see [Monitoring](../operations/monitoring.md#monitoring-pings)) is always there.
 
 ```sh
 # Only the ipify retriever and the Cloudflare provider.
 go build -tags "dnspatch_none,ipify,cloudflare" -ldflags "-s -w" -o dnspatch ./cmd/dnspatch
 
-# The whole daemon plus monitoring, what the -full image is.
-go build -tags "ping,notify_all" -o dnspatch ./cmd/dnspatch
+# Every plugin, what the -full image is.
+go build -tags full -o dnspatch ./cmd/dnspatch
 
-# Only the redis notifier on top of the plain build.
-go build -tags "ping,redis" -o dnspatch ./cmd/dnspatch
+# The plain build plus the rfc2136 provider and the redis notifier.
+go build -tags "rfc2136,redis" -o dnspatch ./cmd/dnspatch
 ```
 
-A build that lacks a plugin your configuration names refuses to start and says which tag to add, for example `provider type "cloudflare" is not compiled into this build: rebuild with the "cloudflare" build tag`. Every retriever and provider a configuration uses must be in the build, so the list of tags is easiest to write from the `type` lines of your `dnspatch.toml`. The [config builder](https://dnspatch.github.io/builder/) does this for you: it lists the tags, the Docker image and the build command for the plugins you chose.
+A build that lacks a plugin your configuration names refuses to start and says which tag to add, for example `provider type "cloudflare" is not compiled into this build: rebuild with the "cloudflare" build tag`. Every plugin a configuration uses must be in the build, so the list of tags is easiest to write from the `type` lines of your `dnspatch.toml`. The [config builder](https://dnspatch.github.io/builder/) does this for you: it lists the tags, the Docker image and the build command for the plugins you chose.
 
 ## Notes on the tags
 
 - `nicru`, `noip`, `dyn` and `dynu` are `dyndns2` with the update URL filled in, so they share its code, and the type `dyndns2` is registered along with any of them. It costs nothing, since the code is in the binary anyway.
-- Expect a saving of a megabyte or two, not a tenfold one: the HTTP and TLS code of the standard library, which nearly every plugin needs, is most of the binary. For `amd64` with `-ldflags "-s -w"`, the plain build is about 8.4 MB, `dnspatch_none,ipify,cloudflare` about 7.2 MB, and the `-full` one about 10 MB. Measure the build you care about with `ls -l`.
+- Expect a saving of a megabyte or two, not a tenfold one: the HTTP and TLS code of the standard library, which nearly every plugin needs, is most of the binary. For `amd64` with `-ldflags "-s -w"`, the plain build is about 7.4 MB, `dnspatch_none,ipify,cloudflare` about 7.1 MB, and the `-full` one about 10.9 MB. Measure the build you care about with `ls -l`.
 
 ## Cross-compiling
 
@@ -53,7 +53,7 @@ The Docker image takes the same tags as a build argument:
 
 ```sh
 docker build --build-arg TAGS=dnspatch_none,ipify,cloudflare -t dnspatch-mini .
-docker build --build-arg TAGS=ping,notify_all -t dnspatch-full .
+docker build --build-arg TAGS=full -t dnspatch-full .
 ```
 
 ## Tags of all built-in plugins
@@ -62,23 +62,23 @@ docker build --build-arg TAGS=ping,notify_all -t dnspatch-full .
 
 | Type | Kind | Build tag | In a plain build |
 |------|------|-----------|------------------|
-| `mqtt` | notifier | `mqtt` | no (`notify_all` brings it too) |
-| `rabbitmq` | notifier | `rabbitmq` | no (`notify_all` brings it too) |
-| `redis` | notifier | `redis` | no (`notify_all` brings it too) |
+| `mqtt` | notifier | `mqtt` | no (`full` brings it too) |
+| `rabbitmq` | notifier | `rabbitmq` | no (`full` brings it too) |
+| `redis` | notifier | `redis` | no (`full` brings it too) |
 | `beget` | provider | `beget` | yes |
 | `cloudflare` | provider | `cloudflare` | yes |
 | `duckdns` | provider | `duckdns` | yes |
 | `dyn` | provider | `dyn` | yes |
 | `dyndns2` | provider | `dyndns2` | yes |
 | `dynu` | provider | `dynu` | yes |
-| `namecheap` | provider | `namecheap` | yes |
+| `namecheap` | provider | `namecheap` | no (`full` brings it too) |
 | `nicru` | provider | `nicru` | yes |
 | `noip` | provider | `noip` | yes |
 | `regru` | provider | `regru` | yes |
-| `rfc2136` | provider | `rfc2136` | yes |
+| `rfc2136` | provider | `rfc2136` | no (`full` brings it too) |
 | `selectel` | provider | `selectel` | yes |
 | `timeweb` | provider | `timeweb` | yes |
-| `yandexcloud` | provider | `yandexcloud` | yes |
+| `yandexcloud` | provider | `yandexcloud` | no (`full` brings it too) |
 | `2ip` | retriever | `2ip` | yes |
 | `icanhazip` | retriever | `icanhazip` | yes |
 | `identme` | retriever | `identme` | yes |

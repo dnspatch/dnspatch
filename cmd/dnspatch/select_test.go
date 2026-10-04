@@ -1,4 +1,4 @@
-//go:build dnspatch_none && cloudflare && ipify
+//go:build dnspatch_none && cloudflare && ipify && !full
 
 package main
 

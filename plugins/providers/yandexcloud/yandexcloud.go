@@ -7,6 +7,11 @@
 // with the account's authorized key, exchanges it for an IAM token, caches
 // the token and renews it when it is close to expiry or a call comes back
 // 401.
+//
+// It is left out of the default build, because its JWT signing code adds about 0.2 MB to the binary; the full build and
+// the "yandexcloud" build tag bring it.
+//
+//dnspatch:extra
 package yandexcloud
 
 import "github.com/dnspatch/dnspatch/plugin"

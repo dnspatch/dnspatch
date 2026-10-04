@@ -21,7 +21,7 @@ ping_url = "${PING_URL}"   # for example https://hc-ping.com/<uuid>
 # ...
 ```
 
-`ping_url` only works on a build with the `ping` tag (the full binary or image); the lightweight build rejects a config that sets it, rather than silently ignoring it, since the field would otherwise do nothing without any indication why.
+`ping_url` works in every build.
 
 ## Notifications
 
@@ -91,6 +91,6 @@ The `mqtt` notifier takes a `mqtt://`, `mqtts://` (TLS), `tcp://`, `ssl://`, `ws
 
 ### Build requirements
 
-Like `ping_url`, a notifier needs a build that has its backend compiled in: the `redis`, `rabbitmq` or `mqtt` tag for these, or `notify_all` for every backend (the full binary and image use it); see [Building from source](../deployment/building.md). The lightweight build rejects a config whose instances use a notifier; a definition that no instance uses is ignored, and `dnspatch --check-config` shows the notifiers each instance publishes to. A build that lacks the backend a definition names says which tag brings it, and an error in one definition is reported by its name (`notify "backup" (redis): ...`).
+A notifier needs a build that has its backend compiled in: the `redis`, `rabbitmq` or `mqtt` tag for these, or `full` for every backend and every other plugin (the full binary and image use it); see [Building from source](../deployment/building.md). The lightweight build rejects a config whose instances use a notifier; a definition that no instance uses is ignored, and `dnspatch --check-config` shows the notifiers each instance publishes to. A build that lacks the backend a definition names says which tag brings it, and an error in one definition is reported by its name (`notify "backup" (redis): ...`).
 
 Adding another backend is a `plugins/notifiers/<backend>` package that implements `plugin.Notifier` and registers itself in `init`, like a provider does; `go generate` gives it a build tag. See [Writing a plugin](../development/writing-a-plugin.md).

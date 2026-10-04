@@ -2,6 +2,9 @@
 # Technitium, ...) with RFC 2136 dynamic updates, the protocol behind
 # nsupdate. No third-party DNS service is involved.
 #
+# The rfc2136 provider is not in the lightweight build: use the -full image or
+# binary, or build with -tags rfc2136.
+#
 # On the server, create a TSIG key (for BIND: tsig-keygen dnspatch-key) and
 # allow it to update the record in the zone, for example in named.conf:
 #

@@ -6,7 +6,7 @@
 // of whether anyone is listening for notifications.
 //
 // The package pulls in the go-redis client, which is why notifiers are left
-// out of a plain build; see the notify_all and redis build tags.
+// out of a plain build; see the full and redis build tags.
 package redis
 
 import (
