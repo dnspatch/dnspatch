@@ -209,6 +209,11 @@ and commit the result. It runs two generators:
   updates the table of build tags in [Building from source](../deployment/building.md). This is what makes a new
   plugin selectable with `-tags`, and part of the default build, with no edit
   of a list.
+
+  A plugin whose dependencies make the binary noticeably larger can stay out of
+  the default build: put the line `//dnspatch:extra` at the end of its package
+  comment, after the reason. Its tag then adds it to the default build, and the
+  `full` tag brings it too. Every notifier is left out this way without the line.
 - `cmd/gendoc` writes `docs/PARAMETERS.md` and `dnspatch.toml.example` from the
   struct tags. It has to see every plugin, so `go generate` builds it with the
   `full` tag; it refuses to write from a build that lacks one.
