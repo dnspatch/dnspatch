@@ -17,13 +17,9 @@ import (
 // plugins or parameters are added.
 const schemaVersion = 1
 
-// Build tags that switch on a whole kind of plugins, as cmd/genplugins writes
-// them into the build constraints of plugins/all.
-const (
-	allProvidersTag  = "providers_all"
-	allRetrieversTag = "retrievers_all"
-	allNotifiersTag  = "notify_all"
-)
+// fullTag is the build tag that compiles every plugin in, as cmd/genplugins
+// writes it into the build constraints of plugins/all.
+const fullTag = "full"
 
 // schema is the machine-readable counterpart of docs/PARAMETERS.md, for tools
 // that build a configuration or a binary: it lists every built-in plugin, the
@@ -38,8 +34,11 @@ type schemaPlugin struct {
 	// Name is the value of the type parameter in the configuration file.
 	Name string `json:"name"`
 	// BuildTags lists the tags of which any one compiles the plugin in.
-	BuildTags []string      `json:"build_tags"`
-	Fields    []schemaField `json:"fields"`
+	BuildTags []string `json:"build_tags"`
+	// InDefaultBuild is set for a plugin that a build without tags has; the
+	// others need their own tag or the full one.
+	InDefaultBuild bool          `json:"in_default_build"`
+	Fields         []schemaField `json:"fields"`
 }
 
 type schemaField struct {
@@ -61,18 +60,25 @@ type schemaField struct {
 }
 
 // renderSchema builds schema.json. Plugins come ordered by kind and name and
-// fields in declaration order, so repeated runs give the same bytes.
-func renderSchema(retrievers, providers, notifiers map[string]reflect.Type) ([]byte, error) {
+// fields in declaration order, so repeated runs give the same bytes. known is
+// the catalog of the source tree, which says what the default build leaves out;
+// a plugin it does not list counts as part of the default build.
+func renderSchema(retrievers, providers, notifiers map[string]reflect.Type, known []plugin.Known) ([]byte, error) {
 	out := schema{SchemaVersion: schemaVersion, Plugins: []schemaPlugin{}}
 
 	kinds := []struct {
 		kind    plugin.Kind
-		allTag  string
 		plugins map[string]reflect.Type
 	}{
-		{plugin.KindRetriever, allRetrieversTag, retrievers},
-		{plugin.KindProvider, allProvidersTag, providers},
-		{plugin.KindNotifier, allNotifiersTag, notifiers},
+		{plugin.KindRetriever, retrievers},
+		{plugin.KindProvider, providers},
+		{plugin.KindNotifier, notifiers},
+	}
+
+	extra := make(map[[2]string]bool, len(known))
+
+	for _, k := range known {
+		extra[[2]string{string(k.Kind), k.Name}] = k.Extra
 	}
 
 	for _, k := range kinds {
@@ -83,10 +89,11 @@ func renderSchema(retrievers, providers, notifiers map[string]reflect.Type) ([]b
 			}
 
 			out.Plugins = append(out.Plugins, schemaPlugin{
-				Kind:      k.kind,
-				Name:      name,
-				BuildTags: []string{name, k.allTag},
-				Fields:    fields,
+				Kind:           k.kind,
+				Name:           name,
+				BuildTags:      []string{name, fullTag},
+				InDefaultBuild: !extra[[2]string{string(k.kind), name}],
+				Fields:         fields,
 			})
 		}
 	}

@@ -57,7 +57,7 @@ func run(docsPath, examplePath, schemaPath string) error {
 	var schemaJSON []byte
 
 	if schemaPath != "" {
-		if schemaJSON, err = renderSchema(retrievers, providers, notifiers); err != nil {
+		if schemaJSON, err = renderSchema(retrievers, providers, notifiers, plugin.Default.Known()); err != nil {
 			return err
 		}
 	}
@@ -103,7 +103,7 @@ func checkComplete(r *plugin.Registry) error {
 	}
 
 	if len(missing) > 0 {
-		return fmt.Errorf("built without %s; build it with the tags that compile every plugin in, as go generate does (-tags notify_all)", strings.Join(missing, ", "))
+		return fmt.Errorf("built without %s; build it with the tags that compile every plugin in, as go generate does (-tags full)", strings.Join(missing, ", "))
 	}
 
 	return nil

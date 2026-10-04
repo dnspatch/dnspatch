@@ -1,4 +1,4 @@
-//go:build !ping && !dnspatch_none
+//go:build !full && !dnspatch_none
 
 package main
 
@@ -26,16 +26,26 @@ func TestANotifierMissingFromTheBuildSaysSo(t *testing.T) {
 	}
 }
 
-// The plain build has every retriever and provider, which is what the
-// dnspatch image ships.
-func TestPlainBuildHasEveryRetrieverAndProvider(t *testing.T) {
+// The plain build has every plugin that is not marked extra, which is what the
+// dnspatch image ships. The extra ones are left to their own tags, so a build
+// made with one of them is not an error here.
+func TestPlainBuildHasEveryPluginOfTheDefaultBuild(t *testing.T) {
 	for _, k := range plugin.Default.Known() {
-		if k.Kind == plugin.KindNotifier {
-			continue
-		}
-
-		if !plugin.Default.Registered(k.Kind, k.Name) {
+		if !k.Extra && !plugin.Default.Registered(k.Kind, k.Name) {
 			t.Errorf("%s %q is missing from the plain build", k.Kind, k.Name)
+		}
+	}
+}
+
+// The plugins that pull in a large dependency are what separates the plain
+// build from the full one; this is the list that the documentation and the
+// release notes promise.
+func TestTheHeavyPluginsAreExtra(t *testing.T) {
+	want := map[string]bool{"rfc2136": true, "yandexcloud": true, "namecheap": true, "redis": true, "rabbitmq": true, "mqtt": true}
+
+	for _, k := range plugin.Default.Known() {
+		if k.Extra != want[k.Name] {
+			t.Errorf("%s %q extra = %v, want %v", k.Kind, k.Name, k.Extra, want[k.Name])
 		}
 	}
 }

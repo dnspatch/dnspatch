@@ -58,6 +58,24 @@ import "example.test/dp/plugin"
 
 func init() { plugin.RegisterNotifier("gamma", nil) }
 `,
+		// The directive in the package comment keeps a plugin out of the default build.
+		"plugins/delta/delta.go": `// Package delta is heavy.
+//
+//dnspatch:extra
+package delta
+
+import "example.test/dp/plugin"
+
+func init() { plugin.RegisterProvider("delta", nil) }
+`,
+		// The same line anywhere else is only a comment.
+		"plugins/epsilon/epsilon.go": `package epsilon
+
+import "example.test/dp/plugin"
+
+//dnspatch:extra
+func init() { plugin.RegisterProvider("epsilon", nil) }
+`,
 		// Neither a function of the same name in another package nor a test file registers a plugin.
 		"plugins/helper/helper.go":      "package helper\n\nfunc RegisterProvider(string) {}\n",
 		"plugins/alpha/alpha_test.go":   "package alpha\n\nimport \"example.test/dp/plugin\"\n\nfunc init() { plugin.RegisterProvider(\"in-a-test\", nil) }\n",
@@ -85,11 +103,13 @@ func TestRunWritesTheGatingFilesTheCatalogAndTheTable(t *testing.T) {
 	}
 
 	for file, wants := range map[string][]string{
-		"plugins/all/provider_alpha.go": {"//go:build !dnspatch_none || providers_all || alpha\n", `import _ "example.test/dp/plugins/alpha"`},
-		"plugins/all/retriever_beta.go": {"//go:build !dnspatch_none || retrievers_all || beta\n", `import _ "example.test/dp/plugins/group/beta"`},
-		"plugins/all/notifier_gamma.go": {"//go:build notify_all || gamma\n", `import _ "example.test/dp/plugins/gamma"`},
-		"plugins/all/catalog_gen.go":    {`plugin.Default.Declare(plugin.KindProvider, "alpha"`, `plugin.Default.Declare(plugin.KindRetriever, "beta"`, `plugin.Default.Declare(plugin.KindNotifier, "gamma"`},
-		"docs/deployment/building.md":   {"| `alpha` | provider | `alpha` | yes |", "| `gamma` | notifier | `gamma` | no (`notify_all` brings it too) |", "after\n"},
+		"plugins/all/provider_alpha.go":   {"//go:build !dnspatch_none || full || alpha\n", `import _ "example.test/dp/plugins/alpha"`},
+		"plugins/all/provider_delta.go":   {"//go:build full || delta\n", `import _ "example.test/dp/plugins/delta"`},
+		"plugins/all/provider_epsilon.go": {"//go:build !dnspatch_none || full || epsilon\n"},
+		"plugins/all/retriever_beta.go":   {"//go:build !dnspatch_none || full || beta\n", `import _ "example.test/dp/plugins/group/beta"`},
+		"plugins/all/notifier_gamma.go":   {"//go:build full || gamma\n", `import _ "example.test/dp/plugins/gamma"`},
+		"plugins/all/catalog_gen.go":      {`plugin.Default.Declare(plugin.KindProvider, "alpha"`, `plugin.Default.Declare(plugin.KindRetriever, "beta"`, `plugin.Default.DeclareExtra(plugin.KindNotifier, "gamma"`, `plugin.Default.DeclareExtra(plugin.KindProvider, "delta", "rebuild with the \"delta\" or \"full\" build tag`, `plugin.Default.Declare(plugin.KindProvider, "epsilon", "rebuild with the \"epsilon\" build tag`},
+		"docs/deployment/building.md":     {"| `alpha` | provider | `alpha` | yes |", "| `gamma` | notifier | `gamma` | no (`full` brings it too) |", "| `delta` | provider | `delta` | no (`full` brings it too) |", "| `epsilon` | provider | `epsilon` | yes |", "after\n"},
 	} {
 		got := read(file)
 

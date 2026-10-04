@@ -13,4 +13,4 @@
 package dnspatch
 
 //go:generate go run ./cmd/genplugins
-//go:generate go run -tags notify_all ./cmd/gendoc
+//go:generate go run -tags full ./cmd/gendoc

@@ -36,11 +36,14 @@ const (
 
 // Known is a plugin that exists in the source tree, whether or not this build
 // has it compiled in. Hint says how to get it, and is shown in place of a bare
-// "unknown type" when a configuration names it.
+// "unknown type" when a configuration names it. Extra is set for a plugin that
+// the default build leaves out, because of the size of what it pulls in; the
+// full build and the plugin's own build tag bring it.
 type Known struct {
-	Kind Kind
-	Name string
-	Hint string
+	Kind  Kind
+	Name  string
+	Hint  string
+	Extra bool
 }
 
 // entry[F] is one registered plugin: its factory and the type of its
@@ -248,10 +251,20 @@ func (r *Registry) BuildNotifier(name string, params map[string]any) (contract.N
 // configuration naming one this build lacks gets hint instead of a bare
 // "unknown type". Declaring a plugin does not register it.
 func (r *Registry) Declare(kind Kind, name, hint string) {
+	r.declare(Known{Kind: kind, Name: name, Hint: hint})
+}
+
+// DeclareExtra is Declare for a plugin that the default build leaves out (see
+// Known.Extra).
+func (r *Registry) DeclareExtra(kind Kind, name, hint string) {
+	r.declare(Known{Kind: kind, Name: name, Hint: hint, Extra: true})
+}
+
+func (r *Registry) declare(k Known) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.known = append(r.known, Known{Kind: kind, Name: name, Hint: hint})
+	r.known = append(r.known, k)
 }
 
 // Known lists every declared plugin, in the order they were declared.

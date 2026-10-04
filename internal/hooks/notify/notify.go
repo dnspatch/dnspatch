@@ -7,7 +7,7 @@
 // of an instance into published payloads.
 //
 // A notifier is compiled into a build only when plugins/all imports it, which
-// is behind build tags (redis, rabbitmq, mqtt, notify_all); that keeps a
+// is behind build tags (redis, rabbitmq, mqtt, full); that keeps a
 // broker's client library out of the binary of a build that does not ask for
 // it.
 package notify

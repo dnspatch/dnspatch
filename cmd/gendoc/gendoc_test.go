@@ -322,7 +322,7 @@ func TestRunWritesBothFilesAndCreatesTheirDirectories(t *testing.T) {
 // CI as well as locally.
 //
 // The files document every plugin, so the check needs a build that has them
-// all: without notify_all it is skipped here, and CI runs it with the tag.
+// all: without the full tag it is skipped here, and CI runs it with the tag.
 func TestCommittedFilesAreCurrent(t *testing.T) {
 	if err := checkComplete(plugin.Default); err != nil {
 		t.Skip(err)

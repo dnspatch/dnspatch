@@ -32,7 +32,17 @@ type found struct {
 	Name string
 	// Import is the import path of the package that registers it.
 	Import string
+	// Extra is set when the default build leaves the plugin out: a notifier
+	// always, any other plugin when its package carries the extraDirective.
+	Extra bool
 }
+
+// extraDirective, in the package comment of a plugin, keeps it out of the
+// default build; the full build and the plugin's own build tag bring it. It is
+// for a plugin whose dependencies make the binary noticeably larger, and the
+// comment around it says by how much. Notifiers need no directive, since they
+// are always left out.
+const extraDirective = "//dnspatch:extra"
 
 // modulePath reads the module path from the go.mod in root.
 func modulePath(root string) (string, error) {
@@ -125,7 +135,8 @@ func discover(root, module string) ([]found, error) {
 }
 
 // scanDir lists the registrations made by the non-test Go files of one
-// directory. Build constraints are ignored on purpose.
+// directory, with whether the package asks to be left out of the default
+// build. Build constraints are ignored on purpose.
 func scanDir(dir string) ([]found, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -141,7 +152,7 @@ func scanDir(dir string) ([]found, error) {
 			continue
 		}
 
-		file, err := parser.ParseFile(fset, filepath.Join(dir, e.Name()), nil, 0)
+		file, err := parser.ParseFile(fset, filepath.Join(dir, e.Name()), nil, parser.ParseComments)
 		if err != nil {
 			return nil, err
 		}
@@ -150,6 +161,7 @@ func scanDir(dir string) ([]found, error) {
 	}
 
 	consts := stringConsts(files)
+	extra := slices.ContainsFunc(files, hasExtraDirective)
 
 	var registered []found
 
@@ -173,7 +185,7 @@ func scanDir(dir string) ([]found, error) {
 				return false
 			}
 
-			registered = append(registered, found{Kind: kind, Name: name})
+			registered = append(registered, found{Kind: kind, Name: name, Extra: extra || kind == plugin.KindNotifier})
 
 			return true
 		})
@@ -184,6 +196,22 @@ func scanDir(dir string) ([]found, error) {
 	}
 
 	return registered, nil
+}
+
+// hasExtraDirective reports whether the package comment of file carries the
+// extraDirective as a line of its own.
+func hasExtraDirective(file *ast.File) bool {
+	if file.Doc == nil {
+		return false
+	}
+
+	for _, c := range file.Doc.List {
+		if strings.TrimSpace(c.Text) == extraDirective {
+			return true
+		}
+	}
+
+	return false
 }
 
 // registrar reports whether call registers a plugin with package plugin, as in
