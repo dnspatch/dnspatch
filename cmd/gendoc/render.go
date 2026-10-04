@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/dnspatch/dnspatch/plugin"
 )
 
 const noDescription = "_No description._"
@@ -16,18 +18,35 @@ type section struct {
 	// kind is the singular used in the heading of each plugin, which keeps a
 	// retriever and a provider of the same name apart in the table of contents.
 	kind    string
+	pkind   plugin.Kind
 	plugins map[string]reflect.Type
+}
+
+// extraSet maps the plugins that the default build leaves out, by kind and
+// name, to true. A plugin the catalog does not list counts as part of the
+// default build.
+func extraSet(known []plugin.Known) map[[2]string]bool {
+	extra := make(map[[2]string]bool, len(known))
+
+	for _, k := range known {
+		extra[[2]string{string(k.Kind), k.Name}] = k.Extra
+	}
+
+	return extra
 }
 
 // render builds the whole document. Plugins are listed by name and parameters
 // in declaration order, so the output does not depend on map iteration order
-// and repeated runs give the same bytes.
-func render(retrievers, providers, notifiers map[string]reflect.Type) ([]byte, error) {
+// and repeated runs give the same bytes. known marks the plugins that only the
+// full build has, and each of them gets a note, so that a reader does not learn
+// it from an error at startup.
+func render(retrievers, providers, notifiers map[string]reflect.Type, known []plugin.Known) ([]byte, error) {
 	sections := []section{
-		{title: "Retrievers", kind: "Retriever", plugins: retrievers},
-		{title: "Providers", kind: "Provider", plugins: providers},
-		{title: "Notifiers", kind: "Notifier", plugins: notifiers},
+		{title: "Retrievers", kind: "Retriever", pkind: plugin.KindRetriever, plugins: retrievers},
+		{title: "Providers", kind: "Provider", pkind: plugin.KindProvider, plugins: providers},
+		{title: "Notifiers", kind: "Notifier", pkind: plugin.KindNotifier, plugins: notifiers},
 	}
+	extra := extraSet(known)
 
 	var b strings.Builder
 
@@ -55,6 +74,11 @@ func render(retrievers, providers, notifiers map[string]reflect.Type) ([]byte, e
 			}
 
 			fmt.Fprintf(&b, "### %s\n\n", heading(s.kind, name))
+
+			if extra[[2]string{string(s.pkind), name}] {
+				fmt.Fprintf(&b, "> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `%s` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).\n\n", name)
+			}
+
 			writeTable(&b, params)
 		}
 	}

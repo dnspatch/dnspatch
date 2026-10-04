@@ -75,11 +75,7 @@ func renderSchema(retrievers, providers, notifiers map[string]reflect.Type, know
 		{plugin.KindNotifier, notifiers},
 	}
 
-	extra := make(map[[2]string]bool, len(known))
-
-	for _, k := range known {
-		extra[[2]string{string(k.Kind), k.Name}] = k.Extra
-	}
+	extra := extraSet(known)
 
 	for _, k := range kinds {
 		for _, name := range slices.Sorted(maps.Keys(k.plugins)) {

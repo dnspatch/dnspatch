@@ -152,6 +152,8 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 
 ### Provider `namecheap`
 
+> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `namecheap` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).
+
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `base_url` | no | `https://dynamicdns.park-your-domain.com/update` | Update URL of the Namecheap Dynamic DNS API |
@@ -190,6 +192,8 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 | `proxy` | no | — | URL of a proxy to send API requests through, for example socks5://user:pass@203.0.113.5:1080. Schemes: socks5 and socks5h (the proxy resolves the API host name), http and https. Percent-encode special characters in the login and password. Use it when the API only accepts requests from a fixed address. The word direct connects without a proxy and ignores the proxy environment variables. Empty: connect directly, or through HTTP_PROXY/HTTPS_PROXY from the environment. The address retriever has its own proxy parameter and does not use this one |
 
 ### Provider `rfc2136`
+
+> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `rfc2136` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
@@ -231,6 +235,8 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 
 ### Provider `yandexcloud`
 
+> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `yandexcloud` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).
+
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `base_url` | no | `https://dns.api.cloud.yandex.net/dns/v1` | Base URL of the Cloud DNS API |
@@ -245,6 +251,8 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 
 ### Notifier `mqtt`
 
+> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `mqtt` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).
+
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `address` | yes | — | A mqtt://, mqtts://, tcp://, ssl://, ws:// or wss:// URL: it carries the host and an optional user name and password |
@@ -255,6 +263,8 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 
 ### Notifier `rabbitmq`
 
+> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `rabbitmq` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).
+
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `address` | yes | — | An amqp:// or amqps:// URL: it carries the host, the credentials and the virtual host |
@@ -262,6 +272,8 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 | `topic_prefix` | no | `dnspatch.events.` | Prepended to the instance name to form the channel, topic or routing key an event is published under |
 
 ### Notifier `redis`
+
+> **Full build only.** The lightweight build rejects a config that uses it. Use the `-full` image or binary, or build with the `redis` or `full` tag; see [Installation](installation.md#lightweight-and-full-builds).
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|

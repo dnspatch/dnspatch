@@ -36,7 +36,7 @@ type exampleSample struct {
 }
 
 func TestExampleShowsEveryKindOfParameter(t *testing.T) {
-	got, err := renderExample(nil, map[string]reflect.Type{"sample": reflect.TypeFor[exampleSample]()}, nil)
+	got, err := renderExample(nil, map[string]reflect.Type{"sample": reflect.TypeFor[exampleSample]()}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,8 +65,28 @@ func TestExampleShowsEveryKindOfParameter(t *testing.T) {
 	}
 }
 
+// A provider that the lightweight build lacks says so above its table, and one
+// that it has does not.
+func TestExampleMarksPluginsOfTheFullBuildOnly(t *testing.T) {
+	types := map[string]reflect.Type{"heavy": reflect.TypeFor[exampleSample](), "light": reflect.TypeFor[exampleSample]()}
+	known := []plugin.Known{{Kind: plugin.KindProvider, Name: "heavy", Extra: true}, {Kind: plugin.KindProvider, Name: "light"}}
+
+	got, err := renderExample(nil, types, nil, known)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := "# Full build only (the -full image or binary, or the \"heavy\" build tag): the\n# lightweight build rejects a config that uses it.\n[provider.heavy]\n"; !strings.Contains(string(got), want) {
+		t.Errorf("no note above the heavy provider, want %q in:\n%s", want, got)
+	}
+
+	if strings.Count(string(got), "Full build only") != 1 {
+		t.Errorf("the note is not on the heavy provider alone:\n%s", got)
+	}
+}
+
 func TestExampleWithoutPluginsHasNoInstance(t *testing.T) {
-	got, err := renderExample(nil, nil, nil)
+	got, err := renderExample(nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +99,7 @@ func TestExampleWithoutPluginsHasNoInstance(t *testing.T) {
 // A notifier only works on the full build, so the example shows it commented out:
 // an active definition would make the file unusable on the lightweight build.
 func TestExampleShowsNotifiersCommentedOut(t *testing.T) {
-	got, err := renderExample(nil, nil, map[string]reflect.Type{"redis": reflect.TypeFor[exampleNotifier]()})
+	got, err := renderExample(nil, nil, map[string]reflect.Type{"redis": reflect.TypeFor[exampleNotifier]()}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +116,7 @@ func TestExampleShowsNotifiersCommentedOut(t *testing.T) {
 }
 
 func TestExampleWithoutNotifiersShowsNoTable(t *testing.T) {
-	got, err := renderExample(nil, nil, nil)
+	got, err := renderExample(nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,13 +138,13 @@ func TestExampleIsRepeatable(t *testing.T) {
 		plugins[name] = reflect.TypeFor[exampleSample]()
 	}
 
-	first, err := renderExample(plugins, plugins, nil)
+	first, err := renderExample(plugins, plugins, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for range 50 {
-		again, err := renderExample(plugins, plugins, nil)
+		again, err := renderExample(plugins, plugins, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -175,7 +195,7 @@ func TestExampleRejectsParametersItCannotShow(t *testing.T) {
 
 	for name, typ := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := renderExample(nil, map[string]reflect.Type{"broken": typ}, nil)
+			_, err := renderExample(nil, map[string]reflect.Type{"broken": typ}, nil, nil)
 			if err == nil || !strings.Contains(err.Error(), `provider "broken"`) {
 				t.Errorf("error %v does not reject and name the plugin", err)
 			}
@@ -237,7 +257,7 @@ func TestTOMLString(t *testing.T) {
 // A user copies the file, edits the values and runs it. Whatever the plugins
 // need to start has to be in it, and it has to load and build as written.
 func TestExampleLoadsAndBuildsAsWritten(t *testing.T) {
-	doc, err := renderExample(plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), nil)
+	doc, err := renderExample(plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +294,7 @@ func TestExampleLoadsAndBuildsAsWritten(t *testing.T) {
 func TestExampleDefinitionsAllBuild(t *testing.T) {
 	retrievers, providers := plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes()
 
-	doc, err := renderExample(retrievers, providers, nil)
+	doc, err := renderExample(retrievers, providers, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +398,7 @@ func TestExampleNotifierTemplatesLoadAndBuildOnceUncommented(t *testing.T) {
 	plugin.RegisterNotifierIn(registry, "one", func(exampleNotifier) (plugin.Notifier, error) { return nil, nil })
 	plugin.RegisterNotifierIn(registry, "two", func(exampleNotifier) (plugin.Notifier, error) { return nil, nil })
 
-	doc, err := renderExample(plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), registry.NotifierConfigTypes())
+	doc, err := renderExample(plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), registry.NotifierConfigTypes(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +423,7 @@ func TestExampleNotifierTemplatesLoadAndBuildOnceUncommented(t *testing.T) {
 }
 
 func TestExampleMarksRequiredParametersOfNotifiers(t *testing.T) {
-	got, err := renderExample(nil, nil, map[string]reflect.Type{"redis": reflect.TypeFor[exampleNotifier]()})
+	got, err := renderExample(nil, nil, map[string]reflect.Type{"redis": reflect.TypeFor[exampleNotifier]()}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,7 +440,7 @@ func TestExampleMarksRequiredParametersOfNotifiers(t *testing.T) {
 // The instance of the example shows how it would pick notifiers, commented out
 // like the notifiers themselves, and only when there are any.
 func TestExampleInstanceShowsHowToPickNotifiers(t *testing.T) {
-	with, err := renderExample(map[string]reflect.Type{"r": reflect.TypeFor[exampleSample]()}, map[string]reflect.Type{"p": reflect.TypeFor[exampleSample]()}, map[string]reflect.Type{"redis": reflect.TypeFor[exampleNotifier]()})
+	with, err := renderExample(map[string]reflect.Type{"r": reflect.TypeFor[exampleSample]()}, map[string]reflect.Type{"p": reflect.TypeFor[exampleSample]()}, map[string]reflect.Type{"redis": reflect.TypeFor[exampleNotifier]()}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -429,7 +449,7 @@ func TestExampleInstanceShowsHowToPickNotifiers(t *testing.T) {
 		t.Errorf("the instance does not show its notify list before its sub-tables:\n%s", with)
 	}
 
-	without, err := renderExample(map[string]reflect.Type{"r": reflect.TypeFor[exampleSample]()}, map[string]reflect.Type{"p": reflect.TypeFor[exampleSample]()}, nil)
+	without, err := renderExample(map[string]reflect.Type{"r": reflect.TypeFor[exampleSample]()}, map[string]reflect.Type{"p": reflect.TypeFor[exampleSample]()}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

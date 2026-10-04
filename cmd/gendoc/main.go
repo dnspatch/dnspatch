@@ -44,12 +44,14 @@ func run(docsPath, examplePath, schemaPath string) error {
 
 	retrievers, providers, notifiers := plugin.Default.RetrieverConfigTypes(), plugin.Default.ProviderConfigTypes(), plugin.Default.NotifierConfigTypes()
 
-	docs, err := render(retrievers, providers, notifiers)
+	known := plugin.Default.Known()
+
+	docs, err := render(retrievers, providers, notifiers, known)
 	if err != nil {
 		return err
 	}
 
-	example, err := renderExample(retrievers, providers, notifiers)
+	example, err := renderExample(retrievers, providers, notifiers, known)
 	if err != nil {
 		return err
 	}
@@ -57,7 +59,7 @@ func run(docsPath, examplePath, schemaPath string) error {
 	var schemaJSON []byte
 
 	if schemaPath != "" {
-		if schemaJSON, err = renderSchema(retrievers, providers, notifiers, plugin.Default.Known()); err != nil {
+		if schemaJSON, err = renderSchema(retrievers, providers, notifiers, known); err != nil {
 			return err
 		}
 	}
