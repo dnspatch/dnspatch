@@ -54,6 +54,12 @@ func (p *publisher) Publish(ctx context.Context, topic string, payload []byte) e
 	return p.client.Publish(ctx, topic, payload).Err()
 }
 
+// Connect pings the server, which dials it and sends the credentials, so a wrong
+// address or password shows up at startup and not on the first event.
+func (p *publisher) Connect(ctx context.Context) error {
+	return p.client.Ping(ctx).Err()
+}
+
 func (p *publisher) Close() error {
 	return p.client.Close()
 }

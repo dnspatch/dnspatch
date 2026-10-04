@@ -16,6 +16,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dnspatch/dnspatch/internal/config"
@@ -35,6 +36,10 @@ const (
 // EnvLogLevel names the environment variable that holds the log level; the
 // --log-level flag takes precedence over it.
 const EnvLogLevel = "DNSPATCH_LOG_LEVEL"
+
+// notifyConnectTimeout bounds the startup connection of one notifier, so an
+// unreachable broker delays the first cycle by no more than this.
+const notifyConnectTimeout = 15 * time.Second
 
 // HookBuilder builds the runner hooks for one instance from its parsed
 // configuration, for example a ping hook when PingURL is set. A build with no
@@ -142,7 +147,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer, opts Opti
 		return fail(stderr, err, ExitConfig)
 	}
 
-	closeNotify, err := attachNotify(instances, cfg, opts.Notify, logger)
+	closeNotify, connectNotify, err := attachNotify(instances, cfg, opts.Notify, logger)
 	if err != nil {
 		return fail(stderr, err, ExitConfig)
 	}
@@ -152,6 +157,10 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer, opts Opti
 		printConfigSummary(stdout, path, cfg, instances, opts.Registry)
 		return ExitOK
 	}
+
+	// A broker is otherwise dialed on the first event, which may be hours away:
+	// an unreachable one has to show up in the log now, not then.
+	connectNotify(ctx)
 
 	// Every build gets the health-status hook, unconditionally: unlike
 	// PingURL, this is not something the config opts into, and it adds no
@@ -205,11 +214,16 @@ func parseLogLevel(flagValue, envValue string) (slog.Level, error) {
 // together. The returned function closes the connections the hooks hold; it is
 // safe to call even when err is set, and does nothing when no instance uses a
 // notifier. instances is in the order of cfg.Instances.
-func attachNotify(instances []runner.Instance, cfg config.Config, build NotifyBuilder, log *slog.Logger) (closeAll func(), err error) {
+//
+// connectAll dials, concurrently, every connection whose notifier supports it
+// (plugin.Connector) and logs each failure at error level; it never fails the
+// daemon, because a broker that is down must not stop the DNS updates.
+func attachNotify(instances []runner.Instance, cfg config.Config, build NotifyBuilder, log *slog.Logger) (closeAll func(), connectAll func(context.Context), err error) {
 	closeAll = func() {}
+	connectAll = func(context.Context) {}
 
 	if len(cfg.Notify) == 0 {
-		return closeAll, nil
+		return closeAll, connectAll, nil
 	}
 
 	names := slices.Sorted(maps.Keys(cfg.Notify))
@@ -217,7 +231,7 @@ func attachNotify(instances []runner.Instance, cfg config.Config, build NotifyBu
 	if build == nil {
 		first := cfg.Notify[names[0]]
 
-		return closeAll, fmt.Errorf("notify: notifier %q (type %q) is used, but this build does not support a notify backend; use a build with the notify_all tag (the -full image or binary)", names[0], first.Type)
+		return closeAll, connectAll, fmt.Errorf("notify: notifier %q (type %q) is used, but this build does not support a notify backend; use a build with the notify_all tag (the -full image or binary)", names[0], first.Type)
 	}
 
 	var errs []error
@@ -243,7 +257,7 @@ func attachNotify(instances []runner.Instance, cfg config.Config, build NotifyBu
 	}
 
 	if err := errors.Join(errs...); err != nil {
-		return closeAll, err
+		return closeAll, connectAll, err
 	}
 
 	for i, in := range cfg.Instances {
@@ -252,7 +266,39 @@ func attachNotify(instances []runner.Instance, cfg config.Config, build NotifyBu
 		}
 	}
 
-	return closeAll, nil
+	connectAll = func(ctx context.Context) {
+		var wg sync.WaitGroup
+
+		for _, name := range names {
+			connector, ok := conns[name].(plugin.Connector)
+			if !ok {
+				continue
+			}
+
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+
+				cctx, cancel := context.WithTimeout(ctx, notifyConnectTimeout)
+				defer cancel()
+
+				err := connector.Connect(cctx)
+				switch {
+				case ctx.Err() != nil:
+					// shutdown during startup, not a broker problem
+				case err != nil:
+					log.Error("notifier is unreachable: its events are not delivered until it is", "notify", name, "type", cfg.Notify[name].Type, "err", err)
+				default:
+					log.Info("notifier connected", "notify", name, "type", cfg.Notify[name].Type)
+				}
+			}()
+		}
+
+		wg.Wait()
+	}
+
+	return closeAll, connectAll, nil
 }
 
 // buildInstances turns the parsed configuration into runnable instances by

@@ -40,6 +40,9 @@ type (
 	Provider = contract.Provider
 	// Notifier delivers one already-serialized event to a message broker.
 	Notifier = contract.Notifier
+	// Connector is an optional interface of a Notifier that connects lazily: the
+	// daemon calls Connect at startup to report an unreachable broker early.
+	Connector = contract.Connector
 	// NotifierCommon holds the parameters every notifier takes; the
 	// configuration struct of a notifier must embed it.
 	NotifierCommon = contract.NotifierCommon

@@ -144,3 +144,18 @@ func TestPublishReachesABoundQueue(t *testing.T) {
 		t.Errorf("got key %q body %q, want the published event", msg.RoutingKey, msg.Body)
 	}
 }
+
+func TestConnectFailsWhenTheBrokerIsUnreachable(t *testing.T) {
+	n, err := build(t, map[string]any{"address": "amqp://127.0.0.1:1/"})
+	if err != nil {
+		t.Fatalf("BuildNotifier: %v", err)
+	}
+	defer func() { _ = n.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := n.(plugin.Connector).Connect(ctx); err == nil {
+		t.Error("Connect against a closed port succeeded, want an error")
+	}
+}

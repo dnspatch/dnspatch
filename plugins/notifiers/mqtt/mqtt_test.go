@@ -166,3 +166,18 @@ func TestPublishReachesASubscriber(t *testing.T) {
 		t.Fatal("the subscriber received nothing")
 	}
 }
+
+func TestConnectFailsWhenTheBrokerIsUnreachable(t *testing.T) {
+	n, err := build(t, map[string]any{"address": "mqtt://127.0.0.1:1"})
+	if err != nil {
+		t.Fatalf("BuildNotifier: %v", err)
+	}
+	defer func() { _ = n.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := n.(plugin.Connector).Connect(ctx); err == nil {
+		t.Error("Connect against a closed port succeeded, want an error")
+	}
+}
