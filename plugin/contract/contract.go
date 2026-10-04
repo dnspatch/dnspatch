@@ -8,6 +8,7 @@ package contract
 
 import (
 	"context"
+	"log/slog"
 	"net/netip"
 	"time"
 )
@@ -66,6 +67,16 @@ type Notifier interface {
 // daemon: the notifier connects again on a later Publish.
 type Connector interface {
 	Connect(ctx context.Context) error
+}
+
+// LoggerSetter is implemented by a Notifier that has something to report on its
+// own, outside of a Publish: a connection the broker dropped, say, which it would
+// otherwise only find out about when the next event is published, hours later.
+// The daemon calls SetLogger once, right after the notifier is built and before
+// anything else; the logger already carries the name and type of the notifier. A
+// notifier that is not given one stays silent.
+type LoggerSetter interface {
+	SetLogger(log *slog.Logger)
 }
 
 // NotifierCommon holds the parameters every notifier takes. RegisterNotifier

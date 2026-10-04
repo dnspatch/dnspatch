@@ -12,7 +12,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -62,6 +64,17 @@ type publisher struct {
 	conn   *amqp.Connection
 	ch     *amqp.Channel
 	closed bool
+	quiet  *atomic.Bool // set before p.conn is closed on purpose; see watch
+	log    *slog.Logger
+}
+
+// SetLogger gives the publisher the logger it reports a lost connection to; see
+// plugin.LoggerSetter.
+func (p *publisher) SetLogger(log *slog.Logger) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.log = log
 }
 
 func (p *publisher) Publish(ctx context.Context, routingKey string, payload []byte) error {
@@ -129,16 +142,25 @@ func (p *publisher) connect(ctx context.Context) error {
 	p.disconnect()
 
 	type result struct {
-		conn *amqp.Connection
-		ch   *amqp.Channel
-		err  error
+		conn  *amqp.Connection
+		ch    *amqp.Channel
+		quiet *atomic.Bool
+		err   error
 	}
 
 	done := make(chan result, 1)
 
+	log := p.log
+
 	go func(address, exchange string) {
 		conn, ch, err := dial(address, exchange)
-		done <- result{conn, ch, err}
+		quiet := new(atomic.Bool)
+
+		if err == nil {
+			watch(conn, ch, quiet, log)
+		}
+
+		done <- result{conn, ch, quiet, err}
 	}(p.address, p.exchange)
 
 	select {
@@ -147,12 +169,13 @@ func (p *publisher) connect(ctx context.Context) error {
 			return r.err
 		}
 
-		p.conn, p.ch = r.conn, r.ch
+		p.conn, p.ch, p.quiet = r.conn, r.ch, r.quiet
 
 		return nil
 	case <-ctx.Done():
 		go func() {
 			if r := <-done; r.conn != nil {
+				r.quiet.Store(true)
 				_ = r.conn.Close()
 			}
 		}()
@@ -191,12 +214,41 @@ func dial(address, exchange string) (*amqp.Connection, *amqp.Channel, error) {
 	return conn, ch, nil
 }
 
+// watch reports a connection or channel that the broker or the network closed
+// on its own. A close the client asked for ends the notification channel without
+// a value, but the broker closing the socket right after it confirms the close
+// can still be read first as a lost connection; quiet, which the publisher sets
+// before it closes the connection, hides that one. When the connection goes, its
+// channel closes with the same error, which is why the channel only speaks while
+// the connection is still up.
+func watch(conn *amqp.Connection, ch *amqp.Channel, quiet *atomic.Bool, log *slog.Logger) {
+	if log == nil {
+		return
+	}
+
+	connClosed := conn.NotifyClose(make(chan *amqp.Error, 1))
+	chClosed := ch.NotifyClose(make(chan *amqp.Error, 1))
+
+	go func() {
+		if err := <-connClosed; err != nil && !quiet.Load() {
+			log.Error("notifier lost its broker connection: events are not delivered until it is re-opened by the next one", "err", err)
+		}
+	}()
+
+	go func() {
+		if err := <-chClosed; err != nil && !quiet.Load() && !conn.IsClosed() {
+			log.Error("the broker closed the notifier's channel: events are not delivered until it is re-opened by the next one", "err", err)
+		}
+	}()
+}
+
 func (p *publisher) disconnect() {
 	if p.conn != nil {
+		p.quiet.Store(true)
 		_ = p.conn.Close()
 	}
 
-	p.conn, p.ch = nil, nil
+	p.conn, p.ch, p.quiet = nil, nil, nil
 }
 
 func (p *publisher) Close() error {
@@ -206,13 +258,15 @@ func (p *publisher) Close() error {
 	p.closed = true
 
 	if p.conn == nil || p.conn.IsClosed() {
-		p.conn, p.ch = nil, nil
+		p.conn, p.ch, p.quiet = nil, nil, nil
 
 		return nil
 	}
 
+	p.quiet.Store(true)
+
 	err := p.conn.Close()
-	p.conn, p.ch = nil, nil
+	p.conn, p.ch, p.quiet = nil, nil, nil
 
 	return err
 }

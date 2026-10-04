@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 	"sync"
@@ -112,6 +113,16 @@ type publisher struct {
 	mu     sync.Mutex
 	client paho.Client
 	closed bool
+	log    *slog.Logger
+}
+
+// SetLogger gives the publisher the logger it reports a lost connection to; see
+// plugin.LoggerSetter.
+func (p *publisher) SetLogger(log *slog.Logger) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.log = log
 }
 
 func (p *publisher) Publish(ctx context.Context, topic string, payload []byte) error {
@@ -184,6 +195,15 @@ func (p *publisher) connect(ctx context.Context) error {
 		SetConnectTimeout(connectTimeout).
 		SetAutoReconnect(false).
 		SetConnectRetry(false)
+
+	// The client calls the handler only for a connection that dropped on its
+	// own, never for one dropped by disconnect, so it needs no check for a
+	// deliberate close. It must not take p.mu, which Publish may be holding.
+	if log := p.log; log != nil {
+		opts.SetConnectionLostHandler(func(_ paho.Client, err error) {
+			log.Error("notifier lost its broker connection: events are not delivered until it is re-opened by the next one", "err", err)
+		})
+	}
 
 	client := paho.NewClient(opts)
 	if err := wait(ctx, client.Connect()); err != nil {

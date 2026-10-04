@@ -38,6 +38,10 @@ func BuildConnection(cfg config.Plugin, log *slog.Logger) (*Connection, error) {
 		return nil, err
 	}
 
+	if s, ok := n.(plugin.LoggerSetter); ok {
+		s.SetLogger(log.With("notify", cfg.Ref, "type", cfg.Type))
+	}
+
 	return &Connection{pub: n, log: log}, nil
 }
 
