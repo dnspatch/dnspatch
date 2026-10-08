@@ -287,5 +287,5 @@ For a configuration to start from, copy [dnspatch.toml.example](https://github.c
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
-| `urls` | yes | — | Shoutrrr service URLs, one per destination, such as telegram://token@telegram?channels=chat or ntfy://ntfy.sh/topic: every event goes to all of them. The services and their URL formats are described at https://shoutrrr.nickfedor.com/services/overview/ |
+| `urls` | yes | — | Shoutrrr service URLs, one per destination, such as telegram://token@telegram?chats=@channel or ntfy://ntfy.sh/topic: every event goes to all of them. Write the token or password of a URL as ${NAME}, the rest can stay in the file. The services and their URL formats are described at https://shoutrrr.nickfedor.com/services/overview/ |
 | `topic_prefix` | no | `dnspatch.events.` | Prepended to the instance name to form the channel, topic or routing key an event is published under |

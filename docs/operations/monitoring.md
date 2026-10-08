@@ -96,8 +96,13 @@ The `shoutrrr` notifier sends each event as a text message to chat and push serv
 ```toml
 [notify.phone]
 type = "shoutrrr"
-urls = ["${TELEGRAM_URL}", "${NTFY_URL}"]   # telegram://token@telegram?chats=@channel, ntfy://ntfy.sh/topic
+urls = [
+  "telegram://${TELEGRAM_BOT_TOKEN}@telegram?chats=@channel-name",
+  "ntfy://ntfy.sh/${NTFY_TOPIC}",
+]
 ```
+
+Only the secret part of a URL needs to be in the environment: `${NAME}` is replaced inside a string, so the rest of the URL (the service, the chat) stays readable in the file. The variables come from the environment of the process, which is what `env_file: .env` in Docker Compose sets up; see [Docker](../deployment/docker.md).
 
 The title is `dnspatch: <instance>` and the body says what happened, for example `cf ipv4: 1.1.1.1 -> 2.2.2.2` for `ip_change`; `topic_prefix` has no use here. Every service of Shoutrrr is available, among them `telegram`, `discord`, `slack`, `ntfy`, `matrix`, `gotify`, `pushover`, `smtp` (e-mail) and `generic` (a webhook); the list and the URL format of each are in the [Shoutrrr documentation](https://shoutrrr.nickfedor.com/services/overview/). A URL is checked at startup, so a wrong scheme or a missing parameter stops the daemon with a message, and the URLs, which carry tokens, are cut out of the errors that reach the log.
 
@@ -105,25 +110,30 @@ The notifier is in the full build only, where it adds about 10 MB to the binary.
 
 #### URL examples
 
-Keep the URLs out of the file, since they carry the token: put them in environment variables or in files (`${file:./secrets/telegram_url.txt}`).
+Write the secret of a URL, the token or the password, as `${NAME}` and keep its value in the environment or in a file (`${file:./secrets/telegram_token.txt}`), and the rest of the URL in the file.
 
 | Service | URL |
 |---------|-----|
-| Telegram | `telegram://<bot-token>@telegram?chats=@channel-name,<chat-id>` (`channels` is accepted for `chats`) |
-| ntfy.sh | `ntfy://ntfy.sh/<topic>` |
-| ntfy on your own server | `ntfy://ntfy.example.com:8080/<topic>?scheme=http`, with `token=<token>` or `user:password@` in front of the host when it wants a login |
-| Discord | `discord://<webhook-token>@<webhook-id>`, the two parts of the webhook URL that Discord gives you |
+| Telegram | `telegram://${TELEGRAM_BOT_TOKEN}@telegram?chats=@channel-name,<chat-id>` (`channels` is accepted for `chats`) |
+| ntfy.sh | `ntfy://ntfy.sh/${NTFY_TOPIC}`: on the public server the name of the topic is all that protects it |
+| ntfy on your own server | `ntfy://ntfy.example.com:8080/dnspatch?scheme=http&token=${NTFY_TOKEN}`, or `user:${NTFY_PASSWORD}@` in front of the host when it wants a login |
+| Discord | `discord://${DISCORD_WEBHOOK_TOKEN}@<webhook-id>`, the two parts of the webhook URL that Discord gives you |
 
 ```toml
 [notify.phone]
 type   = "shoutrrr"
-urls   = ["${TELEGRAM_URL}", "${NTFY_URL}"]   # every event goes to both
+urls   = [
+  "telegram://${TELEGRAM_BOT_TOKEN}@telegram?chats=@channel-name",
+  "discord://${DISCORD_WEBHOOK_TOKEN}@123456789012345678",
+]   # every event goes to both
 events = ["status", "ip_change"]
 
 [[instance]]
 name   = "home"
 notify = ["phone"]
 ```
+
+A character that means something in a URL (`/`, `?`, `#`, `@`, a space) has to be percent-encoded in the value of the variable, such as `%2F` for a slash. The tokens of the services above do not have any.
 
 #### What a message looks like
 

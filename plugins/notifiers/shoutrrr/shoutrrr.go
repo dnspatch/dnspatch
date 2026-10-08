@@ -48,7 +48,7 @@ func init() {
 
 // Config holds the parameters of the shoutrrr notifier.
 type Config struct {
-	URLs []string `toml:"urls,required,secret" example:"[\"${SHOUTRRR_URL}\"]" doc:"Shoutrrr service URLs, one per destination, such as telegram://token@telegram?channels=chat or ntfy://ntfy.sh/topic: every event goes to all of them. The services and their URL formats are described at https://shoutrrr.nickfedor.com/services/overview/"`
+	URLs []string `toml:"urls,required,secret" example:"[\"telegram://${TELEGRAM_BOT_TOKEN}@telegram?chats=@channel-name\"]" doc:"Shoutrrr service URLs, one per destination, such as telegram://token@telegram?chats=@channel or ntfy://ntfy.sh/topic: every event goes to all of them. Write the token or password of a URL as ${NAME}, the rest can stay in the file. The services and their URL formats are described at https://shoutrrr.nickfedor.com/services/overview/"`
 
 	plugin.NotifierCommon
 }
