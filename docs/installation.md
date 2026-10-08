@@ -21,7 +21,7 @@
     go install github.com/dnspatch/dnspatch/cmd/dnspatch@latest
     ```
 
-    Requires Go 1.25 or newer. A plain `go build` gives the same daemon as the lightweight image and binaries. To get a smaller binary, or the features of the full one, choose what goes in with build tags: see [Building from source](deployment/building.md).
+    Requires Go 1.27 or newer. A plain `go build` gives the same daemon as the lightweight image and binaries. To get a smaller binary, or the features of the full one, choose what goes in with build tags: see [Building from source](deployment/building.md).
 
 ## Lightweight and full builds
 
