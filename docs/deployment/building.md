@@ -4,7 +4,7 @@
 go install github.com/dnspatch/dnspatch/cmd/dnspatch@latest
 ```
 
-Requires Go 1.25 or newer. A plain `go build` gives the same daemon as the `dnspatch` image and binaries: every retriever and provider except three heavy ones (`rfc2136`, `yandexcloud` and `namecheap`), the `ping_url` hook, and no notifier backend. To get a smaller binary, or the plugins of the `-full` one, choose what goes in with build tags. This matters where size does: a Raspberry Pi, or a router running OpenWrt.
+Requires Go 1.27 or newer. A plain `go build` gives the same daemon as the `dnspatch` image and binaries: every retriever and provider except three heavy ones (`rfc2136`, `yandexcloud` and `namecheap`), the `ping_url` hook, and no notifier backend. To get a smaller binary, or the plugins of the `-full` one, choose what goes in with build tags. This matters where size does: a Raspberry Pi, or a router running OpenWrt.
 
 ## Build tags
 

@@ -76,7 +76,7 @@ Prefer a form to a text editor? The [online builder](https://dnspatch.github.io/
 
 - **Binary** for Linux, macOS and Windows from the [releases page](https://github.com/dnspatch/dnspatch/releases).
 - **Container image** from Docker Hub (`krimsn/dnspatch`) or the GitHub Container Registry (`ghcr.io/dnspatch/dnspatch`). The `latest-full` tag adds the notifiers and the `rfc2136`, `yandexcloud` and `namecheap` providers.
-- **From source**, with Go 1.25 or newer:
+- **From source**, with Go 1.27 or newer:
 
     ```sh
     go install github.com/dnspatch/dnspatch/cmd/dnspatch@latest
