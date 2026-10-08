@@ -75,7 +75,7 @@ Which types an instance gets, how to override them for one instance, the fields 
 
 ### What is published
 
-dnspatch itself never talks to Telegram, Slack or anything else: it publishes a small JSON event to the channel `dnspatch.events.<instance>` (override the prefix with `topic_prefix`), and whatever is subscribed to it, a bot you write or a small relay service, decides what to do next. This keeps adding a new notification channel a change on the listener's side only, with dnspatch's config and binary untouched. The topic is the same for every type of event; tell them apart by the `event` field of the message.
+The brokers publish a small JSON event to the channel `dnspatch.events.<instance>` (override the prefix with `topic_prefix`), and whatever is subscribed to it, a bot you write or a small relay service, decides what to do next. This keeps adding a new notification channel a change on the listener's side only, with dnspatch's config and binary untouched. The topic is the same for every type of event; tell them apart by the `event` field of the message. The `shoutrrr` notifier is the exception: it words the event as a message and sends it to a chat or push service itself, see [Shoutrrr](#shoutrrr).
 
 ### Redis
 
@@ -89,8 +89,22 @@ The `rabbitmq` notifier (`address` is an `amqp://` or `amqps://` URL) publishes 
 
 The `mqtt` notifier takes a `mqtt://`, `mqtts://` (TLS), `tcp://`, `ssl://`, `ws://` or `wss://` URL as `address`, with the user name and password in it when the broker wants them. Every event is a message on the topic `dnspatch/events/<instance>`: MQTT separates topic levels with a slash, so the dots of `topic_prefix` and of the instance name become slashes. Subscribe to `dnspatch/events/#` for everything. `qos` (1 by default) sets the delivery guarantee, `retain = true` makes the broker keep the last event of each topic for a subscriber that joins later, and `client_id` is random unless you set it. The daemon connects at startup and logs an error if the broker cannot be reached or refuses the credentials, but it keeps running: the connection is re-opened on the next event. A connection the broker or the network drops later is logged at once, as an error with the notifier's name, and not when the next event fails to go out.
 
+### Shoutrrr
+
+The `shoutrrr` notifier sends each event as a text message to chat and push services, with no bot or relay of your own. `urls` is a list of [Shoutrrr](https://shoutrrr.nickfedor.com/services/overview/) service URLs, one per destination, and every event goes to all of them:
+
+```toml
+[notify.phone]
+type = "shoutrrr"
+urls = ["${TELEGRAM_URL}", "${NTFY_URL}"]   # telegram://token@telegram?channels=chat, ntfy://ntfy.sh/topic
+```
+
+The title is `dnspatch: <instance>` and the body says what happened, for example `cf ipv4: 1.1.1.1 -> 2.2.2.2` for `ip_change`; `topic_prefix` has no use here. Every service of Shoutrrr is available, among them `telegram`, `discord`, `slack`, `ntfy`, `matrix`, `gotify`, `pushover`, `smtp` (e-mail) and `generic` (a webhook); the list and the URL format of each are in the [Shoutrrr documentation](https://shoutrrr.nickfedor.com/services/overview/). A URL is checked at startup, so a wrong scheme or a missing parameter stops the daemon with a message, and the URLs, which carry tokens, are cut out of the errors that reach the log.
+
+The notifier is in the full build only, where it adds about 10 MB to the binary.
+
 ### Build requirements
 
-A notifier needs a build that has its backend compiled in: the `redis`, `rabbitmq` or `mqtt` tag for these, or `full` for every backend and every other plugin (the full binary and image use it); see [Building from source](../deployment/building.md). The lightweight build rejects a config whose instances use a notifier; a definition that no instance uses is ignored, and `dnspatch --check-config` shows the notifiers each instance publishes to. A build that lacks the backend a definition names says which tag brings it, and an error in one definition is reported by its name (`notify "backup" (redis): ...`).
+A notifier needs a build that has its backend compiled in: the `redis`, `rabbitmq`, `mqtt` or `shoutrrr` tag for these, or `full` for every backend and every other plugin (the full binary and image use it); see [Building from source](../deployment/building.md). The lightweight build rejects a config whose instances use a notifier; a definition that no instance uses is ignored, and `dnspatch --check-config` shows the notifiers each instance publishes to. A build that lacks the backend a definition names says which tag brings it, and an error in one definition is reported by its name (`notify "backup" (redis): ...`).
 
 Adding another backend is a `plugins/notifiers/<backend>` package that implements `plugin.Notifier` and registers itself in `init`, like a provider does; `go generate` gives it a build tag. See [Writing a plugin](../development/writing-a-plugin.md).

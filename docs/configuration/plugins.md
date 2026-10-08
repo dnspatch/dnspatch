@@ -27,5 +27,6 @@ Every parameter of every plugin is described in the [Parameter reference](../PAR
 | notifier | `redis` | publishes status changes to a Redis Pub/Sub channel (full build) |
 | notifier | `rabbitmq` | publishes status changes to a RabbitMQ topic exchange (full build) |
 | notifier | `mqtt` | publishes status changes to an MQTT topic (full build) |
+| notifier | `shoutrrr` | sends events as messages to Telegram, Discord, Slack, ntfy, Matrix, Gotify, e-mail, a webhook and some twenty other services (full build) |
 
 Notifiers are described in [Monitoring](../operations/monitoring.md#notifications). Which plugins a build contains, and how to choose them, is covered in [Building from source](../deployment/building.md).
