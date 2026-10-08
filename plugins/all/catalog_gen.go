@@ -11,6 +11,7 @@ func init() {
 	plugin.Default.DeclareExtra(plugin.KindNotifier, "mqtt", "rebuild with the \"mqtt\" or \"full\" build tag, or use the -full image (see https://dnspatch.github.io/dnspatch/deployment/building/)")
 	plugin.Default.DeclareExtra(plugin.KindNotifier, "rabbitmq", "rebuild with the \"rabbitmq\" or \"full\" build tag, or use the -full image (see https://dnspatch.github.io/dnspatch/deployment/building/)")
 	plugin.Default.DeclareExtra(plugin.KindNotifier, "redis", "rebuild with the \"redis\" or \"full\" build tag, or use the -full image (see https://dnspatch.github.io/dnspatch/deployment/building/)")
+	plugin.Default.DeclareExtra(plugin.KindNotifier, "shoutrrr", "rebuild with the \"shoutrrr\" or \"full\" build tag, or use the -full image (see https://dnspatch.github.io/dnspatch/deployment/building/)")
 	plugin.Default.Declare(plugin.KindProvider, "beget", "rebuild with the \"beget\" build tag (see https://dnspatch.github.io/dnspatch/deployment/building/)")
 	plugin.Default.Declare(plugin.KindProvider, "cloudflare", "rebuild with the \"cloudflare\" build tag (see https://dnspatch.github.io/dnspatch/deployment/building/)")
 	plugin.Default.Declare(plugin.KindProvider, "duckdns", "rebuild with the \"duckdns\" build tag (see https://dnspatch.github.io/dnspatch/deployment/building/)")

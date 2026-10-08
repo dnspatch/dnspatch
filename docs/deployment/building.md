@@ -65,6 +65,7 @@ docker build --build-arg TAGS=full -t dnspatch-full .
 | `mqtt` | notifier | `mqtt` | no (`full` brings it too) |
 | `rabbitmq` | notifier | `rabbitmq` | no (`full` brings it too) |
 | `redis` | notifier | `redis` | no (`full` brings it too) |
+| `shoutrrr` | notifier | `shoutrrr` | no (`full` brings it too) |
 | `beget` | provider | `beget` | yes |
 | `cloudflare` | provider | `cloudflare` | yes |
 | `duckdns` | provider | `duckdns` | yes |

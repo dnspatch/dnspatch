@@ -515,6 +515,19 @@ key = "${YANDEX_CLOUD_KEY}"
 # event is published under
 # topic_prefix = "dnspatch.events."
 
+# [notify.shoutrrr]
+# type = "shoutrrr"
+# events = ["status"]   # optional, this is the default
+
+# Shoutrrr service URLs, one per destination, such as
+# telegram://token@telegram?chats=@channel or ntfy://ntfy.sh/topic: every
+# event goes to all of them. Required.
+# urls = ["telegram://${TELEGRAM_BOT_TOKEN}@telegram?chats=@channel-name"]
+
+# Prepended to the instance name to form the channel, topic or routing key an
+# event is published under
+# topic_prefix = "dnspatch.events."
+
 # ----------------------------------------------------------------------------
 # Instances: each one ties one or two retrievers to the providers it updates.
 # ----------------------------------------------------------------------------

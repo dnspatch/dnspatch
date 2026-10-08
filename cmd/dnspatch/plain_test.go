@@ -41,7 +41,7 @@ func TestPlainBuildHasEveryPluginOfTheDefaultBuild(t *testing.T) {
 // build from the full one; this is the list that the documentation and the
 // release notes promise.
 func TestTheHeavyPluginsAreExtra(t *testing.T) {
-	want := map[string]bool{"rfc2136": true, "yandexcloud": true, "namecheap": true, "redis": true, "rabbitmq": true, "mqtt": true}
+	want := map[string]bool{"rfc2136": true, "yandexcloud": true, "namecheap": true, "redis": true, "rabbitmq": true, "mqtt": true, "shoutrrr": true}
 
 	for _, k := range plugin.Default.Known() {
 		if k.Extra != want[k.Name] {
