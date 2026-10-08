@@ -96,12 +96,49 @@ The `shoutrrr` notifier sends each event as a text message to chat and push serv
 ```toml
 [notify.phone]
 type = "shoutrrr"
-urls = ["${TELEGRAM_URL}", "${NTFY_URL}"]   # telegram://token@telegram?channels=chat, ntfy://ntfy.sh/topic
+urls = ["${TELEGRAM_URL}", "${NTFY_URL}"]   # telegram://token@telegram?chats=@channel, ntfy://ntfy.sh/topic
 ```
 
 The title is `dnspatch: <instance>` and the body says what happened, for example `cf ipv4: 1.1.1.1 -> 2.2.2.2` for `ip_change`; `topic_prefix` has no use here. Every service of Shoutrrr is available, among them `telegram`, `discord`, `slack`, `ntfy`, `matrix`, `gotify`, `pushover`, `smtp` (e-mail) and `generic` (a webhook); the list and the URL format of each are in the [Shoutrrr documentation](https://shoutrrr.nickfedor.com/services/overview/). A URL is checked at startup, so a wrong scheme or a missing parameter stops the daemon with a message, and the URLs, which carry tokens, are cut out of the errors that reach the log.
 
 The notifier is in the full build only, where it adds about 10 MB to the binary.
+
+#### URL examples
+
+Keep the URLs out of the file, since they carry the token: put them in environment variables or in files (`${file:./secrets/telegram_url.txt}`).
+
+| Service | URL |
+|---------|-----|
+| Telegram | `telegram://<bot-token>@telegram?chats=@channel-name,<chat-id>` (`channels` is accepted for `chats`) |
+| ntfy.sh | `ntfy://ntfy.sh/<topic>` |
+| ntfy on your own server | `ntfy://ntfy.example.com:8080/<topic>?scheme=http`, with `token=<token>` or `user:password@` in front of the host when it wants a login |
+| Discord | `discord://<webhook-token>@<webhook-id>`, the two parts of the webhook URL that Discord gives you |
+
+```toml
+[notify.phone]
+type   = "shoutrrr"
+urls   = ["${TELEGRAM_URL}", "${NTFY_URL}"]   # every event goes to both
+events = ["status", "ip_change"]
+
+[[instance]]
+name   = "home"
+notify = ["phone"]
+```
+
+#### What a message looks like
+
+The title is `dnspatch: <instance>`; the body depends on the event:
+
+| Event | Body |
+|-------|------|
+| `ip_change` | `cf ipv4: 1.1.1.1 -> 2.2.2.2`, one line per changed address (`none` for the old one when the record had no address) |
+| `status` | `status: failure` or `status: recovery`, and `error: ...` on a failure |
+| `provider_status` | `provider cf: failure`, and `error: ...` |
+| `retriever_status` | `retriever ipify: failure`, and `error: ...` |
+| `cycle` | `cycle succeeded` or `cycle failed`, and `error: ...` |
+| `lifecycle` | `started 0.5.0` or `stopped 0.5.0` |
+
+If one service refuses a message the others still get it, and the error, with the secrets cut out, is logged.
 
 ### Build requirements
 
