@@ -7,7 +7,7 @@
 # carries the standard library of the compiler that built it, so it has to be a
 # release that still gets security fixes. Both base images are pinned by digest
 # and Dependabot moves the digests.
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS build
 
 WORKDIR /src
 
